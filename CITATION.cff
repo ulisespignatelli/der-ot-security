@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "Si usás este software o el trabajo asociado, citá el artículo."
+title: "der-ot-security: herramientas de ciberseguridad OT para redes de distribución con generación distribuida"
+type: software
+authors:
+  - family-names: Pignatelli
+    given-names: Ulises Gabriel
+    affiliation: "Universidad Abierta Interamericana, CAETI, Rosario, Argentina"
+preferred-citation:
+  type: conference-paper
+  title: "Ciberseguridad en Redes Eléctricas Inteligentes con Generación Distribuida: Revisión Estructurada y Matriz de Controles para Entornos IT/OT"
+  authors:
+    - family-names: Pignatelli
+      given-names: Ulises Gabriel
+    - family-names: Casco
+      given-names: María Eugenia
+    - family-names: Roatta
+      given-names: Santiago
+  year: 2026
+  conference:
+    name: "14° Congreso Nacional de Ingeniería en Informática / Sistemas de Información (CONAIISI 2026)"
+    city: Resistencia
+    region: Chaco
+    country: AR

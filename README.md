@@ -116,6 +116,17 @@ Eléctricas Inteligentes con Generación Distribuida: Revisión Estructurada y M
 para Entornos IT/OT* (CONAIISI 2026), orientado a redes de distribución con DER en localidades
 del interior de la provincia de Santa Fe, Argentina.
 
+**Artículo completo:** [paper/pignatelli-casco-roatta-2026-ciberseguridad-smart-grids-der.pdf](paper/pignatelli-casco-roatta-2026-ciberseguridad-smart-grids-der.pdf)
+
+> U. G. Pignatelli, M. E. Casco y S. Roatta, "Ciberseguridad en Redes Eléctricas Inteligentes con
+> Generación Distribuida: Revisión Estructurada y Matriz de Controles para Entornos IT/OT",
+> 14° Congreso Nacional de Ingeniería en Informática / Sistemas de Información (CONAIISI 2026),
+> Resistencia, Chaco, Argentina, noviembre de 2026.
+
+El artículo presenta la etapa inicial de la investigación: la revisión estructurada y la matriz
+preliminar de trazabilidad. Este repositorio no forma parte de sus resultados; desarrolla lo que
+el artículo define como etapas futuras.
+
 | Etapa de la hoja de ruta | Componente del repositorio |
 |---|---|
 | 2. Arquitectura de referencia | `model/architecture.json`, `tools/validate_architecture.py` |
