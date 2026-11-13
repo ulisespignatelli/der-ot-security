@@ -115,6 +115,25 @@ H. Araújo y P. Simões, "Denial of Service Attacks: Detecting the Frailties of 
 Algorithms in the Classification Process", CRITIS 2018, doi:10.1007/978-3-030-05849-4_19.
 Conjunto de datos: https://github.com/tjcruz-dei/ICS_PCAPS
 
+## Reproducción de capturas en vivo
+
+El panel web puede reproducir una captura grabada respetando sus tiempos, para ver al sensor
+trabajar sobre tráfico de equipos reales: el inventario se arma solo, el gráfico avanza y las
+alertas aparecen en el momento de la captura en que ocurre el ataque.
+
+```bash
+# Con las capturas del laboratorio, incluidas en el repositorio
+python -m lab.live --replay results/pcap/S5.pcap --policy lab/policy.json --speed 1
+
+# Con capturas de terceros: aprende la línea base de la captura normal y reproduce la de ataque
+python -m lab.live --replay mitm/eth2dump-mitm-change-5m-0,5h_1.pcap --baseline clean/eth2dump-clean-0,5h_1.pcap
+```
+
+![Reproducción de una captura](docs/img/reproduccion.png)
+
+Sin `--speed`, elige la velocidad que hace durar la reproducción unos 45 segundos. Es una
+reproducción: no hay equipos conectados ni tráfico nuevo.
+
 ## El laboratorio
 
 ```
@@ -175,7 +194,8 @@ GitHub Pages sobre la carpeta `docs/`.
 python -m unittest
 ```
 
-25 pruebas: modelo, laboratorio grabado y en vivo, lector de capturas, línea base y línea de comandos.
+26 pruebas: modelo, laboratorio grabado y en vivo, reproducción, lector de capturas, línea base y
+línea de comandos. El historial de versiones está en `CHANGELOG.md`.
 
 ## Cómo adaptarlo
 

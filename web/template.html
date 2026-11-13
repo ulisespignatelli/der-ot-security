@@ -138,6 +138,9 @@ button:disabled { opacity: .5; cursor: default; }
 .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .chart-head span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .lsw { width: 16px; height: 3px; border-radius: 2px; background: var(--mark); }
+.lsw.mark { width: 3px; height: 14px; background: var(--critical); }
+.progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: -4px 0 14px; }
+.progress b { display: block; height: 100%; background: var(--accent); }
 .lsw.dash { width: 21px; background: repeating-linear-gradient(90deg, var(--mark2) 0 5px, transparent 5px 8px); }
 pre.cmd { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font: 14px var(--font-mono); overflow-x: auto; margin: 10px 0; }
 footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
@@ -448,7 +451,96 @@ document.addEventListener("mousemove", e => {
     <p style="margin:0;color:var(--muted)">Se abre este mismo sitio en <span class="mono">http://127.0.0.1:8765</span> con el panel activo. Los resultados de la última ejecución grabada están en la pestaña <a href="#laboratorio">Laboratorio</a>.</p></div>`;
   root.innerHTML = offline;
   let meta = null;
-  if (location.protocol.startsWith("http")) fetch("meta").then(r => r.ok ? r.json() : null).then(m => { if (m && m.attacks) { meta = m; start(); } }).catch(() => {});
+  if (location.protocol.startsWith("http")) fetch("meta").then(r => r.ok ? r.json() : null).then(m => { if (m && m.mode === "replay") { meta = m; startReplay(); } else if (m && m.attacks) { meta = m; start(); } }).catch(() => {});
+
+  function startReplay() {
+    const mmss = t => `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+    root.innerHTML = `
+    <div class="livehead"><div><h2>Reproducción de una captura</h2>
+      <p class="lead" style="margin-bottom:14px">El sensor recibe los segmentos de <span class="mono">${esc(meta.capture)}</span> en el mismo orden y con la misma separación con que fueron capturados, a mayor velocidad. No hay equipos conectados ni tráfico nuevo. ${esc(meta.policy_label)}.</p></div>
+      <span class="pill" id="rp-conn" style="margin-bottom:14px"><i></i>Conectando</span></div>
+    <div class="grid tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="tile"><div class="v" id="rp-time">00:00</div><div class="k">tiempo de captura, de ${mmss(meta.seconds)}</div></div>
+      <div class="tile"><div class="v" id="rp-req">0</div><div class="k">solicitudes Modbus analizadas</div></div>
+      <div class="tile"><div class="v" id="rp-rate">0</div><div class="k">solicitudes por segundo de captura</div></div>
+      <div class="tile"><div class="v" id="rp-dev">0</div><div class="k">activos descubiertos</div></div>
+      <div class="tile"><div class="v" id="rp-al">0</div><div class="k">alertas</div></div>
+    </div>
+    <div class="progress"><b id="rp-bar" style="width:0%"></b></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px">
+      <button type="button" class="primary" id="rp-restart">Reproducir desde el inicio</button>
+      <span style="color:var(--muted);font-size:13px;margin-left:8px">Velocidad:</span>
+      ${[10, 60, 300].map(v => `<button type="button" class="rp-speed" data-v="${v}">${v}×</button>`).join("")}
+      <span style="color:var(--muted);font-size:13px" id="rp-speed"></span>
+    </div>
+    <div class="card">
+      <div class="chart-head"><h3>Solicitudes por segundo a lo largo de la captura</h3><span id="rp-c"></span></div>
+      <div class="legend" style="margin:0 0 6px"><span><i class="lsw"></i>Solicitudes por segundo</span><span><i class="lsw mark"></i>Alerta</span></div>
+      <svg id="rp-chart" viewBox="0 0 1000 150" width="100%" role="img" aria-label="Solicitudes por segundo y alertas a lo largo de la captura"></svg>
+    </div>
+    <div class="grid two" style="margin-top:14px">
+      <div class="card"><h3>Activos descubiertos</h3><div class="scroll"><table>
+        <thead><tr><th>Dirección</th><th>Rol</th><th>Funciones</th><th class="num">Solicitudes</th><th>Registros escritos</th></tr></thead>
+        <tbody id="rp-inv"><tr><td colspan="5" style="color:var(--muted)">Todavía no se observó ningún equipo.</td></tr></tbody></table></div></div>
+      <div class="card"><h3>Alertas</h3>
+        <div class="feed" id="rp-feed"><div style="color:var(--muted);font-size:14px;padding:8px 0" id="rp-empty">Sin alertas hasta ahora.</div></div></div>
+    </div>`;
+    let pts = [], marks = [], count = 0;
+    function draw() {
+      const W = 1000, H = 150, L = 44, R = 10, T = 8, B = 22, total = meta.seconds || 1;
+      const max = Math.max(10, ...pts.map(p => p.r)) * 1.1, top = Math.round(max / 1.1);
+      const x = t => L + (W - L - R) * t / total, y = v => T + (H - T - B) * (1 - v / max);
+      const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.r).toFixed(1)}`).join(" ");
+      const last = pts[pts.length - 1];
+      $("#rp-chart").innerHTML = `
+        <line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>
+        <line x1="${L}" x2="${W - R}" y1="${y(top)}" y2="${y(top)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+        <text x="${L - 6}" y="${y(0) + 4}" text-anchor="end" font-size="11" class="muted">0</text>
+        <text x="${L - 6}" y="${y(top) + 4}" text-anchor="end" font-size="11" class="muted">${top}</text>
+        <text x="${L}" y="${H - 5}" font-size="11" class="muted">00:00</text><text x="${W - R}" y="${H - 5}" text-anchor="end" font-size="11" class="muted">${mmss(total)}</text>
+        ${pts.length > 1 ? `<path d="${line} L${x(last.t).toFixed(1)},${y(0)} L${x(pts[0].t).toFixed(1)},${y(0)} Z" fill="var(--mark)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round"/>` : ""}
+        ${marks.map(m => `<line x1="${x(m.t)}" x2="${x(m.t)}" y1="${T}" y2="${y(0)}" stroke="var(--critical)" stroke-width="2"/><line x1="${x(m.t)}" x2="${x(m.t)}" y1="${T}" y2="${y(0)}" stroke="transparent" stroke-width="12" data-tip="${esc(mmss(m.t) + " · " + m.rule + " " + m.name)}"/>`).join("")}
+        ${last ? `<circle cx="${x(last.t)}" cy="${y(last.r)}" r="4" fill="var(--mark)" stroke="var(--surface)" stroke-width="2"/>` : ""}`;
+    }
+    function addAlert(a) {
+      count++; $("#rp-al").textContent = count;
+      marks.push({ t: a.second, rule: a.rule, name: a.name });
+      const empty = $("#rp-empty"); if (empty) empty.remove();
+      const el = document.createElement("div");
+      el.className = "ev alert new";
+      el.innerHTML = `<div class="t">${mmss(a.second)}</div><div>${pill(a.severity === "alta" ? "serious" : "warning", "Alerta " + a.severity)} <span class="mono">${a.rule}</span> <b>${esc(a.name)}</b> <span class="mono">${a.technique}</span><br>${esc(a.detail)} · origen <span class="mono">${a.source}</span></div>`;
+      $("#rp-feed").prepend(el);
+      draw();
+    }
+    function clear() {
+      pts = []; marks = []; count = 0; $("#rp-al").textContent = "0";
+      $("#rp-feed").innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 0" id="rp-empty">Sin alertas hasta ahora.</div>`;
+      draw();
+    }
+    $("#rp-restart").addEventListener("click", () => fetch("replay/restart", { method: "POST" }));
+    root.addEventListener("click", e => { const b = e.target.closest(".rp-speed"); if (b) fetch("replay/speed/" + b.dataset.v, { method: "POST" }); });
+    const es = new EventSource("events");
+    es.onerror = () => { $("#rp-conn").className = "pill critical"; $("#rp-conn").innerHTML = "<i></i>Sin conexión con el servidor"; };
+    es.addEventListener("history", e => { clear(); JSON.parse(e.data).forEach(addAlert); });
+    es.addEventListener("replay_start", clear);
+    es.addEventListener("alert", e => addAlert(JSON.parse(e.data)));
+    es.addEventListener("replay_state", e => {
+      const s = JSON.parse(e.data);
+      $("#rp-conn").className = "pill " + (s.finished ? "" : "good");
+      $("#rp-conn").innerHTML = `<i></i>${s.finished ? "Reproducción terminada" : "Reproduciendo"}`;
+      $("#rp-time").textContent = mmss(s.elapsed);
+      $("#rp-req").textContent = s.requests;
+      $("#rp-rate").textContent = s.rate;
+      $("#rp-dev").textContent = s.inventory.length;
+      $("#rp-bar").style.width = (s.total ? Math.min(100, s.elapsed / s.total * 100) : 100) + "%";
+      $("#rp-speed").textContent = `actual ${s.speed}×`;
+      $("#rp-c").textContent = `${mmss(s.elapsed)} de ${mmss(s.total)}`;
+      if (!pts.length || s.elapsed > pts[pts.length - 1].t) pts.push({ t: s.elapsed, r: s.rate });
+      if (s.inventory.length) $("#rp-inv").innerHTML = s.inventory.map(d => `<tr><td><span class="mono">${d.ip}</span>${d.hardware_addresses.length ? `<br><span class="mono" style="color:var(--muted);font-size:12px">${d.hardware_addresses.join(", ")}</span>` : ""}${d.identification ? `<br>${esc(d.identification)}` : ""}</td><td>${d.roles.join(", ")}</td><td class="mono">${d.function_codes.join(", ")}</td><td class="num">${d.requests}</td><td>${Object.entries(d.writes).map(([r, w]) => `<span class="mono">${r}</span>: ${w.min} a ${w.max}`).join("<br>") || "—"}</td></tr>`).join("");
+      draw();
+    });
+    draw();
+  }
 
   function start() {
     root.innerHTML = `

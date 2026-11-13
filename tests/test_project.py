@@ -210,6 +210,22 @@ class Sensor(unittest.TestCase):
         base = engine.Detector({"hardware_addresses": {"10.0.0.5": ["aa:aa:aa:aa:aa:01"]}})
         self.assertEqual([a["rule"] for a in base.link(1.0, "10.0.0.5", "aa:aa:aa:aa:aa:02")], ["R12"])
 
+    def test_replay_feeds_a_capture_to_the_sensor_and_finishes(self):
+        import time
+        replay = live.Replay(self.pcaps / "S5.pcap", self.policy, "política del laboratorio", speed=50)
+        try:
+            deadline = time.time() + 10
+            while not replay.state()["finished"] and time.time() < deadline:
+                time.sleep(0.05)
+            state = replay.state()
+            self.assertTrue(state["finished"])
+            self.assertEqual({a["rule"] for a in replay.alerts}, {"R1", "R2", "R4"})
+            self.assertEqual(len(state["inventory"]), 3)
+            self.assertEqual(replay.post(["replay", "speed", "0"]), None)
+            self.assertEqual(replay.post(["replay", "restart"]), {"ok": True})
+        finally:
+            replay.stop()
+
     def test_sensor_package_cannot_transmit(self):
         for source in (ROOT / "sensor").glob("*.py"):
             text = source.read_text(encoding="utf-8")
