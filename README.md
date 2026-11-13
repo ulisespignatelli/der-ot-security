@@ -166,6 +166,8 @@ python -m sensor verify results/audit.jsonl
 # results/audit.jsonl: cadena íntegra, 23 registros.
 ```
 
+![Registro auditable y propuestas de política](docs/img/auditoria.png)
+
 `python -m lab.run_lab` deja su propio registro en `results/audit.jsonl`, y la integración
 continua lo verifica en cada subida.
 
