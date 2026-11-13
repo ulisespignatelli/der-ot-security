@@ -169,7 +169,8 @@ python -m sensor verify results/audit.jsonl
 ![Registro auditable y propuestas de política](docs/img/auditoria.png)
 
 `python -m lab.run_lab` deja su propio registro en `results/audit.jsonl`, y la integración
-continua lo verifica en cada subida.
+continua lo verifica en cada subida. El sitio muestra ese registro en la pestaña Laboratorio y
+deja alterarlo para ver dónde se rompe la cadena: la verificación corre en el navegador.
 
 **No es fail-closed, y es deliberado.** Un portón entre un agente y sus herramientas hace bien en
 bloquear cuando no puede auditar. Un sensor de red industrial es lo contrario: si el disco se

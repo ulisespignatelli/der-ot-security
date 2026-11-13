@@ -21,6 +21,7 @@ def main():
         sys.exit("Falta results/lab_results.json. Ejecutar antes: python -m lab.run_lab")
     third = ROOT / "results" / "third_party_validation.json"
     replays = ROOT / "results" / "replays.json"
+    audit_path = ROOT / "results" / "audit.jsonl"
     items, ratings, _ = expert_consensus.read_csv(ROOT / "model" / "experts_sample.csv")
     data = {
         "architecture": arch,
@@ -31,6 +32,8 @@ def main():
         "lab": json.loads(lab_path.read_text(encoding="utf-8")),
         "third_party": json.loads(third.read_text(encoding="utf-8")) if third.exists() else None,
         "replays": json.loads(replays.read_text(encoding="utf-8")) if replays.exists() else [],
+        "audit": [json.loads(line) for line in audit_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+                 if audit_path.exists() else [],
         "experts": expert_consensus.analyse(items, ratings, {t["id"]: t["risk"] for t in threats}),
         "maturity": json.loads((ROOT / "model" / "maturity.json").read_text(encoding="utf-8")),
     }

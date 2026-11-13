@@ -101,6 +101,13 @@ svg .muted { fill: var(--muted); }
 .xc { width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; }
 .xc[aria-pressed="true"] { border-color: var(--ink); }
 .rec-pick[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+table.audit { table-layout: fixed; width: 100%; }
+table.audit col.n { width: 44px; } table.audit col.h { width: 152px; }
+#audit-rows td { font-size: 13px; vertical-align: top; }
+#audit-rows tr.broken td { background: color-mix(in srgb, var(--critical) 12%, var(--surface)); }
+#audit-rows tr.first-broken td { box-shadow: inset 0 2px 0 var(--critical); }
+#audit-rows td.h { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+#audit-rows tr.edited td.evt { color: var(--critical); }
 .axis-title { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
 dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
 dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
@@ -427,6 +434,20 @@ document.addEventListener("mousemove", e => {
     <tbody>${tp.captures.map(c => `<tr><td class="mono">${esc(c.file)}</td><td>${esc(c.description)}</td><td class="num">${c.requests}</td><td>${c.rules.length ? pill("good", "Detectado") : pill("good", "Sin alertas")}</td><td class="mono">${c.rules.join(", ") || "—"}</td><td class="num">${c.first_alert_second == null ? "—" : "segundo " + c.first_alert_second}</td></tr>`).join("")}</tbody>
     </table></div>
     <p style="color:var(--muted);font-size:13px;margin:10px 0 0;max-width:86ch">R12 detecta la presencia del intermediario porque la dirección IP de un equipo aparece con otra dirección física; no detecta qué valores fueron alterados. Fuente: ${esc(tp.citation)}.</p></div>`)(DATA.third_party) : ""}
+  <div class="card" style="margin-top:14px"><h3>Registro de auditoría de esta ejecución</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 10px;max-width:86ch">Cada alerta se agrega a un archivo donde cada línea guarda el hash de la anterior (<span class="mono">results/audit.jsonl</span>). Estos son los registros reales de la ejecución del laboratorio. Probá a alterar uno: la verificación se hace acá mismo, recalculando SHA-256 sobre el contenido.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
+      <button type="button" id="audit-edit">Borrar al atacante de un registro</button>
+      <button type="button" id="audit-drop">Quitar un registro</button>
+      <button type="button" id="audit-reset">Restaurar el original</button>
+      <span class="pill" id="audit-state" style="margin-left:auto"><i></i>Verificando…</span>
+    </div>
+    <p id="audit-why" style="margin:0 0 10px;font-size:14px"></p>
+    <div class="scroll" style="max-height:340px;overflow-y:auto"><table class="audit">
+      <colgroup><col class="n"><col><col class="h"></colgroup>
+      <thead><tr><th class="num">#</th><th>Evento</th><th>Hash</th></tr></thead>
+      <tbody id="audit-rows"></tbody></table></div>
+  </div>
   <div class="grid two" style="margin-top:14px">
     <div class="card"><h3>Alertas generadas con la política manual</h3><div class="scroll"><table>
       <thead><tr><th>Escenario</th><th>Regla</th><th>Origen</th><th>Detalle</th></tr></thead>
@@ -438,6 +459,73 @@ document.addEventListener("mousemove", e => {
     </table>
     <p style="color:var(--muted);font-size:13px;margin-bottom:0">Maestro autorizado: <span class="mono">${s.policy.authorized_masters.join(", ")}</span>. Límite de potencia admitido: ${s.policy.registers["10"].min} a ${s.policy.registers["10"].max} %.<br>Cada alerta de esta ejecución quedó en un registro encadenado por hashes (<span class="mono">results/audit.jsonl</span>), que la integración continua verifica en cada subida.</p></div>
   </div>`;
+
+  /* Verificación de la cadena, recalculada en el navegador */
+  (function () {
+    const original = DATA.audit || [];
+    if (!original.length) { const c = $("#audit-rows"); if (c) c.closest(".card").remove(); return; }
+    let records = original.map(r => JSON.parse(JSON.stringify(r)));
+    let edited = null;
+    const canon = v => v === null || typeof v !== "object" ? JSON.stringify(v)
+      : Array.isArray(v) ? "[" + v.map(canon).join(",") + "]"
+      : "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}";
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    async function verify(list) {
+      let prev = "0".repeat(64);
+      for (let i = 0; i < list.length; i++) {
+        const r = list[i];
+        if (r.seq !== i) return { ok: false, at: i, reason: `número fuera de orden: ${r.seq}, se esperaba ${i}` };
+        if (r.prev !== prev) return { ok: false, at: i, reason: "no encadena con el registro anterior" };
+        if (await sha256(prev + canon({ seq: r.seq, time: r.time, event: r.event })) !== r.hash)
+          return { ok: false, at: i, reason: "el contenido no coincide con su hash" };
+        prev = r.hash;
+      }
+      return { ok: true, at: null, last: prev };
+    }
+    function label(e) {
+      if (e.kind === "alerta") return `<span class="mono">${e.rule}</span> ${esc(e.name)} · ${esc(e.detail)}`;
+      if (e.kind === "escenario") return `Escenario <span class="mono">${e.id}</span> ${esc(e.name)} · ${esc(e.outcome)}`;
+      if (e.kind === "inicio") return `Inicio de <span class="mono">${esc(e.command)}</span>`;
+      if (e.kind === "fin") return `Fin: ${e.detected} de ${e.attacks} ataques detectados`;
+      return esc(e.kind);
+    }
+    async function draw() {
+      const state = await verify(records);
+      $("#audit-state").className = "pill " + (state.ok ? "good" : "critical");
+      $("#audit-state").innerHTML = `<i></i>${state.ok ? "Cadena íntegra, " + records.length + " registros" : "Cadena rota en el registro " + state.at}`;
+      $("#audit-why").innerHTML = state.ok
+        ? `<span style="color:var(--muted)">Cada registro encadena con el anterior. Último hash: <span class="mono" style="font-size:12.5px">${state.last.slice(0, 32)}…</span></span>`
+        : `${esc(state.reason)}. Los primeros ${state.at} registros siguen siendo confiables; desde ahí el registro no sirve como evidencia.`;
+      $("#audit-rows").innerHTML = records.map((r, i) => {
+        const bad = !state.ok && i >= state.at;
+        return `<tr class="${bad ? "broken" : ""} ${!state.ok && i === state.at ? "first-broken" : ""} ${i === edited ? "edited" : ""}"><td class="num">${r.seq}</td><td class="evt">${label(r.event)}</td><td class="h">${r.hash.slice(0, 14)}…</td></tr>`;
+      }).join("");
+    }
+    $("#audit-edit").addEventListener("click", () => {
+      const i = records.findIndex(r => r.event.kind === "alerta" && (r.event.source || "").endsWith(".99"));
+      if (i < 0) return;
+      const swap = t => String(t).replace(/10\.10\.40\.99/g, "10.10.15.30");
+      records[i].event = { ...records[i].event, source: swap(records[i].event.source), detail: swap(records[i].event.detail) };
+      edited = i;
+      draw();
+    });
+    $("#audit-drop").addEventListener("click", () => {
+      const i = records.findIndex(r => r.event.kind === "alerta");
+      if (i < 0) return;
+      records.splice(i, 1);
+      edited = null;
+      draw();
+    });
+    $("#audit-reset").addEventListener("click", () => {
+      records = original.map(r => JSON.parse(JSON.stringify(r)));
+      edited = null;
+      draw();
+    });
+    draw();
+  })();
 })();
 
 /* ---------- En vivo ---------- */

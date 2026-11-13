@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.8.1 (13 de noviembre de 2026)
+
+- El sitio muestra el registro de auditoría de la última ejecución del laboratorio y permite
+  alterarlo para ver cómo se rompe la cadena. La verificación corre en el navegador, recalculando
+  SHA-256, así que funciona también en GitHub Pages.
+
 ## 0.8.0 (13 de noviembre de 2026)
 
 - Registro de auditoría append-only encadenado por hashes, con `python -m sensor verify`.
