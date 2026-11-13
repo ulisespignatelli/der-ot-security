@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciberseguridad OT en redes con DER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap" rel="stylesheet">
+<style>
+/* Layout: barra de etapas arriba, una vista por etapa, resumen antes del detalle. */
+:root {
+  color-scheme: light;
+  --bg: #f3f5f4; --surface: #ffffff; --ink: #16201e; --muted: #56625f; --line: #d8dedc;
+  --accent: #0f6b6e; --accent-soft: #e1eeee; --mark: #2a78d6; --mark2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1413; --surface: #191f1e; --ink: #e7edeb; --muted: #9ba9a5; --line: #2e3836;
+    --accent: #56bcbd; --accent-soft: #17302f; --mark: #3987e5; --mark2: #d95926;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1413; --surface: #191f1e; --ink: #e7edeb; --muted: #9ba9a5; --line: #2e3836;
+  --accent: #56bcbd; --accent-soft: #17302f; --mark: #3987e5; --mark2: #d95926;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
+header.top { padding: 28px 0 14px; }
+header.top h1 { font: 600 30px/1.15 var(--font-display); margin: 0 0 6px; text-wrap: balance; }
+header.top p { margin: 0; color: var(--muted); max-width: 68ch; }
+nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0; position: sticky; top: 0; background: var(--bg); z-index: 5; border-bottom: 1px solid var(--line); }
+nav a { text-decoration: none; color: var(--muted); padding: 7px 12px; border-radius: 6px; font-weight: 500; font-size: 14px; }
+nav a .n { font-family: var(--font-mono); font-size: 12px; margin-right: 6px; opacity: .8; }
+nav a:hover { color: var(--ink); background: var(--accent-soft); }
+nav a[aria-current="page"] { background: var(--accent); color: var(--surface); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section.view { display: none; padding-top: 24px; }
+section.view.on { display: block; }
+h2 { font: 600 22px/1.2 var(--font-display); margin: 0 0 4px; text-wrap: balance; }
+h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.lead { color: var(--muted); max-width: 70ch; margin: 0 0 18px; }
+.grid { display: grid; gap: 14px; }
+.tiles { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 18px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.tile .v { font: 600 30px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.tile .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.two { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.note { border-left: 3px solid var(--warning); background: var(--surface); padding: 10px 14px; border-radius: 0 6px 6px 0; color: var(--muted); font-size: 14px; margin: 0 0 18px; max-width: 80ch; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td, tr.sel td { background: var(--accent-soft); }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px 1px 7px; font-size: 12.5px; white-space: nowrap; background: var(--surface); }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.pill.good i { background: var(--good); } .pill.warning i { background: var(--warning); }
+.pill.serious i { background: var(--serious); } .pill.critical i { background: var(--critical); }
+.stage { display: block; text-decoration: none; color: inherit; }
+.stage:hover { border-color: var(--accent); }
+.stage .tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.stage p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.stages { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; align-items: end; }
+label.f { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+select, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); }
+svg text { font-family: var(--font-body); fill: var(--ink); }
+svg .muted { fill: var(--muted); }
+.asset { cursor: pointer; }
+.asset rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.asset:hover rect, .asset.sel rect { stroke: var(--accent); stroke-width: 2; }
+.flow { fill: none; stroke: var(--muted); stroke-width: 1.4; opacity: .55; }
+.flow.bad { stroke: var(--critical); stroke-dasharray: 6 4; stroke-width: 2; opacity: .95; }
+.flow.hi { stroke-width: 3.5; opacity: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 0; border-top: 2px solid var(--muted); }
+.sw.bad { border-top: 2px dashed var(--critical); }
+.sq { width: 12px; height: 12px; border-radius: 3px; }
+.matrix { display: grid; grid-template-columns: 28px repeat(5, minmax(0, 1fr)); gap: 2px; font-size: 12px; }
+.matrix .ax { display: flex; align-items: center; justify-content: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell { min-height: 58px; border-radius: 4px; padding: 5px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+.chip { font-family: var(--font-mono); font-size: 11.5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; cursor: pointer; line-height: 1.6; }
+.chip:hover, .chip.sel { border-color: var(--ink); }
+.chip.dim { opacity: .3; }
+.xc { width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+.xc[aria-pressed="true"] { border-color: var(--ink); }
+.axis-title { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
+ul.plain { margin: 0; padding-left: 18px; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 5px; font-size: 12.5px; max-width: 280px; display: none; z-index: 20; }
+.q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 560px) { .q { grid-template-columns: minmax(0, 1fr); } }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 4px 12px; font-variant-numeric: tabular-nums; font-size: 14px; border-left: 1px solid var(--line); }
+.seg label:first-child span { border-left: 0; }
+.seg input:checked + span { background: var(--accent); color: var(--surface); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.bar b { display: block; height: 100%; background: var(--mark); border-radius: 0 4px 4px 0; }
+.drow { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 14px; padding: 4px 0; }
+.drow .p { text-align: right; font-variant-numeric: tabular-nums; }
+button.primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+.livecols { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: start; margin-top: 14px; }
+@media (max-width: 860px) { .livecols { grid-template-columns: minmax(0, 1fr); } }
+.livehead { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; }
+.attack { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.attack:last-of-type { border-bottom: 0; }
+.attack .d { color: var(--muted); font-size: 13.5px; }
+.attack .r { grid-column: 1 / -1; min-height: 22px; font-size: 13.5px; color: var(--muted); }
+.feed { display: grid; max-height: 520px; overflow-y: auto; }
+.ev { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--line); font-size: 14px; }
+.ev .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+.ev.alert { border-left-color: var(--critical); }
+.ev.info { color: var(--muted); }
+.ev.new { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .ev.new { animation: none; } }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.chart-head span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.lsw { width: 16px; height: 3px; border-radius: 2px; background: var(--mark); }
+.lsw.dash { width: 21px; background: repeating-linear-gradient(90deg, var(--mark2) 0 5px, transparent 5px 8px); }
+pre.cmd { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font: 14px var(--font-mono); overflow-x: auto; margin: 10px 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Ciberseguridad OT en redes de distribución con DER</h1>
+  <p>Arquitectura de referencia, modelo de amenazas, laboratorio de detección e indicadores de madurez para redes eléctricas con generación distribuida.</p>
+</header>
+<nav id="nav" aria-label="Etapas"></nav>
+
+<section class="view" id="v-resumen"></section>
+<section class="view" id="v-arquitectura"></section>
+<section class="view" id="v-amenazas"></section>
+<section class="view" id="v-laboratorio"></section>
+<section class="view" id="v-en-vivo"></section>
+<section class="view" id="v-expertos"></section>
+<section class="view" id="v-madurez"></section>
+
+<footer id="foot"></footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const VIEWS = [
+  ["resumen", "", "Resumen"], ["arquitectura", "2", "Arquitectura"], ["amenazas", "3", "Amenazas"],
+  ["laboratorio", "4", "Laboratorio"], ["en-vivo", "4", "En vivo"], ["expertos", "4", "Expertos"], ["madurez", "5", "Madurez"]];
+const LEVEL_CLASS = { "Crítico": "critical", "Alto": "serious", "Medio": "warning", "Bajo": "good" };
+const OUTCOME_CLASS = { "detectado": "good", "sin alertas": "good", "no detectado": "critical", "falso positivo": "critical" };
+const pill = (cls, text) => `<span class="pill ${cls}"><i></i>${esc(text)}</span>`;
+const assetById = Object.fromEntries(DATA.architecture.assets.map(a => [a.id, a]));
+const zoneById = Object.fromEntries(DATA.architecture.zones.map(z => [z.id, z]));
+const scenarioById = Object.fromEntries(DATA.lab.scenarios.map(s => [s.id, s]));
+const threatById = Object.fromEntries(DATA.threats.map(t => [t.id, t]));
+const familyById = Object.fromEntries(DATA.families.map(f => [f.id, f]));
+const levelOf = score => DATA.levels.slice().sort((a, b) => b.min - a.min).find(l => score >= l.min).name;
+const labStatus = t => t.lab_scenario ? scenarioById[t.lab_scenario].outcome : "no evaluado";
+
+/* Navegación */
+$("#nav").innerHTML = VIEWS.map(([id, n, name]) =>
+  `<a href="#${id}" data-v="${id}">${n ? `<span class="n">E${n}</span>` : ""}${name}</a>`).join("");
+function route() {
+  const id = VIEWS.some(v => v[0] === location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
+  document.querySelectorAll("section.view").forEach(s => s.classList.toggle("on", s.id === "v-" + id));
+  document.querySelectorAll("#nav a").forEach(a => a.dataset.v === id ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+addEventListener("hashchange", route);
+
+/* Tooltip */
+const tip = $("#tip");
+document.addEventListener("mousemove", e => {
+  const el = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (!el) { tip.style.display = "none"; return; }
+  tip.textContent = el.dataset.tip; tip.style.display = "block";
+  const w = tip.offsetWidth, x = Math.min(e.clientX + 14, innerWidth - w - 8);
+  tip.style.left = x + "px"; tip.style.top = (e.clientY + 16) + "px";
+});
+
+/* ---------- Resumen ---------- */
+(function () {
+  const s = DATA.lab.summary, v = DATA.validation;
+  const crit = DATA.threats.filter(t => t.level === "Crítico").length;
+  $("#v-resumen").innerHTML = `
+  <p class="note">La arquitectura es un escenario hipotético, las ponderaciones de riesgo son provisionales y las respuestas de expertos son sintéticas. Los resultados del laboratorio provienen de una ejecución real sobre equipos emulados.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${v.violations} <small>de ${v.flows.length}</small></div><div class="k">flujos que violan la segmentación</div></div>
+    <div class="tile"><div class="v">${crit} <small>de ${DATA.threats.length}</small></div><div class="k">amenazas de nivel crítico</div></div>
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados por el sensor pasivo</div></div>
+    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en ${s.baseline_requests} solicitudes de operación normal</div></div>
+  </div>
+  <div class="grid stages">
+    <a class="card stage" href="#arquitectura"><span class="tag">Etapa 2</span><h3>Arquitectura de referencia</h3><p>Zonas, activos y conductos descritos como datos. Un validador marca los flujos que no pasan por un conducto declarado.</p></a>
+    <a class="card stage" href="#amenazas"><span class="tag">Etapa 3</span><h3>Modelo de amenazas</h3><p>Amenazas por zona con sus controles y marcos, ponderadas por probabilidad e impacto y asociadas a MITRE ATT&amp;CK for ICS.</p></a>
+    <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. Un sensor pasivo analiza la captura y genera alertas.</p></a>
+    <a class="card stage" href="#en-vivo"><span class="tag">Etapa 4</span><h3>Laboratorio en vivo</h3><p>El mismo laboratorio en tiempo real: se lanza cada ataque y la alerta aparece al instante. Requiere el servidor local.</p></a>
+    <a class="card stage" href="#expertos"><span class="tag">Etapa 4</span><h3>Consulta a expertos</h3><p>Acuerdo entre expertos medido con el coeficiente W de Kendall y comparado con el modelo.</p></a>
+    <a class="card stage" href="#madurez"><span class="tag">Etapa 5</span><h3>Indicadores de madurez</h3><p>Autoevaluación de 18 preguntas para distribuidoras y cooperativas, con puntaje y recomendaciones.</p></a>
+  </div>`;
+})();
+
+/* ---------- Arquitectura ---------- */
+(function () {
+  const A = DATA.architecture, V = DATA.validation;
+  const W = 800, BH = 96, LX = 150, BW = 140, BX = 44;
+  const pos = {};
+  A.zones.forEach((z, zi) => {
+    const list = A.assets.filter(a => a.zone === z.id);
+    list.forEach((a, i) => { pos[a.id] = { x: LX + (W - LX) * (i + 1) / (list.length + 1), y: zi * BH + BH / 2, zi }; });
+  });
+  const H = A.zones.length * BH;
+  function path(f) {
+    const s = pos[f.src], d = pos[f.dst];
+    if (s.zi === d.zi) {
+      const dir = d.x > s.x ? 1 : -1;
+      return `M${s.x + dir * BW / 2},${s.y} L${d.x - dir * BW / 2},${d.y}`;
+    }
+    const dir = d.zi > s.zi ? 1 : -1;
+    const y1 = s.y + dir * BX / 2, y2 = d.y - dir * BX / 2, my = (y1 + y2) / 2;
+    return `M${s.x},${y1} C${s.x},${my} ${d.x},${my} ${d.x},${y2}`;
+  }
+  const bands = A.zones.map((z, i) => `
+    <rect x="0" y="${i * BH}" width="${W}" height="${BH - 4}" rx="6" fill="var(--accent-soft)" opacity="${i % 2 ? .55 : .9}"/>
+    <text x="12" y="${i * BH + 26}" font-size="14" font-weight="600">${esc(z.short || z.name)}</text>
+    <text x="12" y="${i * BH + 44}" font-size="12" class="muted">${esc(z.purdue)}</text>`).join("");
+  const flows = V.flows.map(f => `<path id="fl-${f.id}" class="flow ${f.status === "violación" ? "bad" : ""}" d="${path(f)}" marker-end="url(#${f.status === "violación" ? "arB" : "arA"})" data-tip="${esc(f.id + ": " + assetById[f.src].name + " → " + assetById[f.dst].name + " (" + f.protocol + ", puerto " + f.port + "). " + f.reason)}"/>`);
+  const boxes = A.assets.map(a => { const p = pos[a.id]; return `
+    <g class="asset" id="as-${a.id}" data-id="${a.id}" tabindex="0" role="button" aria-label="${esc(a.name)}">
+      <rect x="${p.x - BW / 2}" y="${p.y - BX / 2}" width="${BW}" height="${BX}" rx="6"/>
+      <text x="${p.x}" y="${p.y - 1}" text-anchor="middle" font-size="13" font-weight="500">${esc(a.name)}</text>
+      <text x="${p.x}" y="${p.y + 14}" text-anchor="middle" font-size="11" class="muted" font-family="var(--font-mono)">${a.ip}</text>
+    </g>`; }).join("");
+  $("#v-arquitectura").innerHTML = `
+  <h2>Arquitectura de referencia</h2>
+  <p class="lead">${A.zones.length} zonas unidas por ${A.conduits.length} conductos. De ${V.flows.length} flujos declarados, ${V.violations} cruzan entre zonas sin un conducto que los permita. Es un escenario hipotético, no un despliegue real. Seleccioná un activo para ver sus amenazas.</p>
+  <div class="grid two">
+    <div class="card">
+      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:640px" role="img" aria-label="Diagrama de zonas, activos y flujos">
+        <defs>
+          <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+          <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--critical)"/></marker>
+        </defs>
+        ${bands}<g>${flows.join("")}</g>${boxes}
+      </svg></div>
+      <div class="legend"><span><i class="sw"></i>Flujo permitido por un conducto</span><span><i class="sw bad"></i>Flujo que viola la segmentación</span></div>
+    </div>
+    <div class="card" id="asset-detail"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Flujos validados</h3><div class="scroll"><table>
+    <thead><tr><th>Flujo</th><th>Origen</th><th>Destino</th><th>Protocolo</th><th class="num">Puerto</th><th>Estado</th><th>Motivo</th></tr></thead>
+    <tbody>${V.flows.map(f => `<tr class="pick" data-flow="${f.id}"><td class="mono">${f.id}</td><td>${esc(assetById[f.src].name)}</td><td>${esc(assetById[f.dst].name)}</td><td>${esc(f.protocol)}</td><td class="num">${f.port}</td><td>${pill(f.status === "violación" ? "critical" : "good", f.status === "violación" ? "Violación" : "Permitido")}</td><td>${esc(f.reason)}${f.note ? `. ${esc(f.note)}` : ""}</td></tr>`).join("")}</tbody>
+  </table></div></div>`;
+  function show(id) {
+    const a = assetById[id], z = zoneById[a.zone];
+    document.querySelectorAll(".asset").forEach(g => g.classList.toggle("sel", g.dataset.id === id));
+    const ths = DATA.threats.filter(t => t.asset === id);
+    const fl = V.flows.filter(f => f.src === id || f.dst === id);
+    $("#asset-detail").innerHTML = `<h3>${esc(a.name)}</h3>
+      <dl class="kv"><dt>Tipo</dt><dd>${esc(a.type)}</dd><dt>Zona</dt><dd>${esc(z.name)} (${esc(z.purdue)})</dd>${z.frameworks.length ? `<dt>Marcos</dt><dd>${z.frameworks.map(esc).join("; ")}</dd>` : ""}<dt>Dirección</dt><dd class="mono">${a.ip}</dd></dl>
+      <p style="color:var(--muted);font-size:14px">${esc(a.description)}</p>
+      <h3>Amenazas (${ths.length})</h3>
+      ${ths.length ? `<ul class="plain">${ths.map(t => `<li><span class="mono">${t.id}</span> ${esc(t.title)} ${pill(LEVEL_CLASS[t.level], t.level)}</li>`).join("")}</ul>` : `<p style="color:var(--muted);font-size:14px">Sin amenazas modeladas para este activo.</p>`}
+      <h3 style="margin-top:14px">Flujos (${fl.length})</h3>
+      <ul class="plain">${fl.map(f => `<li><span class="mono">${f.id}</span> ${esc(assetById[f.src].name)} → ${esc(assetById[f.dst].name)}${f.status === "violación" ? " " + pill("critical", "Violación") : ""}</li>`).join("")}</ul>`;
+  }
+  document.querySelectorAll(".asset").forEach(g => {
+    g.addEventListener("click", () => show(g.dataset.id));
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(g.dataset.id); } });
+  });
+  document.querySelectorAll("tr[data-flow]").forEach(tr => {
+    const el = document.getElementById("fl-" + tr.dataset.flow);
+    tr.addEventListener("mouseenter", () => el.classList.add("hi"));
+    tr.addEventListener("mouseleave", () => el.classList.remove("hi"));
+  });
+  show("inversor");
+})();
+
+/* ---------- Amenazas ---------- */
+(function () {
+  const T = DATA.threats;
+  const root = $("#v-amenazas");
+  const assets = [...new Set(T.map(t => t.asset))];
+  const zones = DATA.architecture.zones.filter(z => T.some(t => assetById[t.asset].zone === z.id));
+  root.innerHTML = `
+  <h2>Modelo de amenazas</h2>
+  <p class="lead">${T.length} amenazas en ${zones.length} zonas, con sus controles y marcos de referencia. La probabilidad y el impacto son valores provisionales, en escala de 1 a 5. Cada amenaza indica si se evaluó en el laboratorio.</p>
+  <div class="filters">
+    <label class="f" for="f-zone">Zona<select id="f-zone"><option value="">Todas</option>${zones.map(z => `<option value="${z.id}">${esc(z.short)}</option>`).join("")}</select></label>
+    <label class="f" for="f-family">Tipo de amenaza<select id="f-family"><option value="">Todos</option>${DATA.families.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select></label>
+    <label class="f" for="f-asset">Activo<select id="f-asset"><option value="">Todos</option>${assets.map(a => `<option value="${a}">${esc(assetById[a].name)}</option>`).join("")}</select></label>
+    <label class="f" for="f-level">Nivel de riesgo<select id="f-level"><option value="">Todos</option>${DATA.levels.map(l => `<option>${l.name}</option>`).join("")}</select></label>
+  </div>
+  <div class="grid two">
+    <div class="card">
+      <h3>Matriz de riesgo</h3>
+      <div style="display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px">
+        <div style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:12px;color:var(--muted)">Impacto</div>
+        <div><div class="matrix" id="matrix"></div><div class="axis-title">Probabilidad</div></div>
+      </div>
+      <div class="legend">${DATA.levels.map(l => `<span><i class="sq" style="background:var(--${LEVEL_CLASS[l.name]})"></i>${l.name} (desde ${l.min})</span>`).join("")}</div>
+    </div>
+    <div class="card" id="threat-detail"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Tipos de amenaza por zona</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 10px;max-width:80ch">Cantidad de amenazas de cada tipo en cada zona. Seleccioná una celda para filtrar.</p>
+    <div class="scroll"><table id="cross"></table></div></div>
+  <div class="card" style="margin-top:14px"><div class="scroll"><table>
+    <thead><tr><th>Id</th><th>Amenaza</th><th>Tipo</th><th>Zona</th><th>Activo</th><th>Técnica</th><th class="num">P</th><th class="num">I</th><th class="num">Riesgo</th><th>Nivel</th><th>Laboratorio</th></tr></thead>
+    <tbody id="threat-rows"></tbody></table></div></div>`;
+  let sel = T[0].id;
+  function drawCross(fz, ff) {
+    const count = (f, z) => T.filter(t => t.family === f && assetById[t.asset].zone === z).length;
+    const max = Math.max(...DATA.families.flatMap(f => zones.map(z => count(f.id, z.id))));
+    $("#cross").innerHTML = `<thead><tr><th>Tipo de amenaza</th>${zones.map(z => `<th class="num">${esc(z.short)}</th>`).join("")}<th class="num">Total</th></tr></thead><tbody>` +
+      DATA.families.map(f => `<tr><td>${esc(f.name)}</td>${zones.map(z => {
+        const n = count(f.id, z.id), on = fz === z.id && ff === f.id;
+        return `<td class="num" style="padding:3px">${n ? `<button type="button" class="xc" data-z="${z.id}" data-f="${f.id}" aria-pressed="${on}" style="background:color-mix(in srgb, var(--mark) ${Math.round(12 + 38 * n / max)}%, var(--surface))" data-tip="${esc(f.name)} en ${esc(z.short)}: ${n} ${n === 1 ? "amenaza" : "amenazas"}">${n}</button>` : `<span style="color:var(--muted);display:block;padding:4px 10px">·</span>`}</td>`;
+      }).join("")}<td class="num">${T.filter(t => t.family === f.id).length}</td></tr>`).join("") +
+      `<tr><td style="color:var(--muted)">Total</td>${zones.map(z => `<td class="num">${T.filter(t => assetById[t.asset].zone === z.id).length}</td>`).join("")}<td class="num">${T.length}</td></tr></tbody>`;
+  }
+  function draw() {
+    const fz = $("#f-zone").value, ff = $("#f-family").value, fa = $("#f-asset").value, fl = $("#f-level").value;
+    const match = t => (!fz || assetById[t.asset].zone === fz) && (!ff || t.family === ff) && (!fa || t.asset === fa) && (!fl || t.level === fl);
+    drawCross(fz, ff);
+    let m = "";
+    for (let imp = 5; imp >= 1; imp--) {
+      m += `<div class="ax">${imp}</div>`;
+      for (let p = 1; p <= 5; p++) {
+        const lv = levelOf(p * imp);
+        const here = T.filter(t => t.likelihood === p && t.impact === imp);
+        m += `<div class="cell" style="background:color-mix(in srgb, var(--${LEVEL_CLASS[lv]}) 30%, var(--surface))" data-tip="Probabilidad ${p}, impacto ${imp}: riesgo ${p * imp} (${lv})">${here.map(t => `<button class="chip ${t.id === sel ? "sel" : ""} ${match(t) ? "" : "dim"}" data-t="${t.id}" data-tip="${esc(t.title)}">${t.id}</button>`).join("")}</div>`;
+      }
+    }
+    m += `<div></div>` + [1, 2, 3, 4, 5].map(p => `<div class="ax">${p}</div>`).join("");
+    $("#matrix").innerHTML = m;
+    $("#threat-rows").innerHTML = T.filter(match).map(t => {
+      const st = labStatus(t);
+      return `<tr class="pick ${t.id === sel ? "sel" : ""}" data-t="${t.id}"><td class="mono">${t.id}</td><td>${esc(t.title)}</td><td>${esc(familyById[t.family].name)}</td><td>${esc(zoneById[assetById[t.asset].zone].short)}</td><td>${esc(assetById[t.asset].name)}</td><td class="mono">${t.technique.id}</td><td class="num">${t.likelihood}</td><td class="num">${t.impact}</td><td class="num">${t.risk}</td><td>${pill(LEVEL_CLASS[t.level], t.level)}</td><td>${pill(OUTCOME_CLASS[st] || "", st[0].toUpperCase() + st.slice(1))}</td></tr>`;
+    }).join("") || `<tr><td colspan="11" style="color:var(--muted)">Ninguna amenaza coincide con los filtros.</td></tr>`;
+    const t = threatById[sel], st = labStatus(t), sc = t.lab_scenario ? scenarioById[t.lab_scenario] : null;
+    $("#threat-detail").innerHTML = `<h3><span class="mono">${t.id}</span> ${esc(t.title)}</h3>
+      <p style="margin-top:0;font-size:14px">${esc(t.description)}</p>
+      <dl class="kv">
+        <dt>Tipo</dt><dd>${esc(familyById[t.family].name)}</dd>
+        <dt>Zona</dt><dd>${esc(zoneById[assetById[t.asset].zone].name)}</dd>
+        <dt>Activo</dt><dd>${esc(assetById[t.asset].name)}</dd>
+        <dt>Técnica</dt><dd><span class="mono">${t.technique.id}</span> ${esc(t.technique.name)}</dd>
+        <dt>Riesgo</dt><dd>${t.likelihood} × ${t.impact} = ${t.risk} ${pill(LEVEL_CLASS[t.level], t.level)}</dd>
+        <dt>Impacto</dt><dd>${esc(t.impact_type)}</dd>
+        <dt>Marcos</dt><dd>${t.refs.map(esc).join("; ")}</dd>
+        <dt>Laboratorio</dt><dd>${sc ? `Escenario <span class="mono">${sc.id}</span> ` : ""}${pill(OUTCOME_CLASS[st] || "", st[0].toUpperCase() + st.slice(1))}${sc && sc.fired_rules.length ? `<br>Reglas: <span class="mono">${sc.fired_rules.join(", ")}</span>` : ""}</dd>
+      </dl>
+      <h3 style="margin-top:14px">Controles</h3><ul class="plain">${t.controls.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`;
+  }
+  root.addEventListener("click", e => {
+    const x = e.target.closest(".xc");
+    if (x) {
+      const on = x.getAttribute("aria-pressed") === "true";
+      $("#f-zone").value = on ? "" : x.dataset.z; $("#f-family").value = on ? "" : x.dataset.f; draw(); return;
+    }
+    const el = e.target.closest("[data-t]"); if (el) { sel = el.dataset.t; draw(); }
+  });
+  root.addEventListener("change", draw);
+  draw();
+})();
+
+/* ---------- Laboratorio ---------- */
+(function () {
+  const L = DATA.lab, s = L.summary;
+  const missed = L.scenarios.filter(x => x.outcome === "no detectado");
+  $("#v-laboratorio").innerHTML = `
+  <h2>Evaluación en laboratorio</h2>
+  <p class="lead">Una pasarela de protocolos emulada consulta por Modbus/TCP a un inversor emulado. Un switch emulado copia todo el tráfico a un archivo PCAP y el sensor lo analiza sin enviar ningún paquete. Ejecución del ${esc(s.generated.slice(0, 10))}. Para lanzar los ataques y ver las alertas al instante, abrí la pestaña <a href="#en-vivo">En vivo</a>.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados</div></div>
+    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en operación normal (${s.baseline_requests} solicitudes en ${s.baseline_seconds} s)</div></div>
+    <div class="tile"><div class="v">${Object.keys(s.rules).length}</div><div class="k">reglas de detección activas</div></div>
+  </div>
+  ${missed.length ? `<p class="note">${missed.map(x => `El escenario ${x.id} no se detectó: ${x.description}`).join(" ")} Son los límites del monitoreo pasivo de red y el motivo para sumar otras capas de defensa.</p>` : ""}
+  <div class="card"><div class="scroll"><table>
+    <thead><tr><th>Escenario</th><th>Descripción</th><th>Amenaza</th><th>Resultado</th><th>Reglas disparadas</th><th>Estado final del inversor</th><th class="num">Paquetes</th></tr></thead>
+    <tbody>${L.scenarios.map(x => `<tr><td><span class="mono">${x.id}</span><br>${esc(x.name)}</td><td>${esc(x.description)}</td><td class="mono">${x.threat || "—"}</td><td>${pill(OUTCOME_CLASS[x.outcome], x.outcome[0].toUpperCase() + x.outcome.slice(1))}</td><td class="mono">${x.fired_rules.join(", ") || "—"}</td><td>Límite ${x.inverter_state.limite_pct} %, ${x.inverter_state.conectado ? "conectado" : "desconectado"}, ${x.inverter_state.potencia_w} W</td><td class="num">${x.packets}</td></tr>`).join("")}</tbody>
+  </table></div></div>
+  <div class="grid two" style="margin-top:14px">
+    <div class="card"><h3>Alertas generadas</h3><div class="scroll"><table>
+      <thead><tr><th>Escenario</th><th>Regla</th><th>Origen</th><th>Detalle</th></tr></thead>
+      <tbody>${L.scenarios.flatMap(x => x.alerts.map(a => `<tr><td class="mono">${x.id}</td><td><span class="mono">${a.rule}</span> ${esc(a.name)}</td><td class="mono">${a.source}</td><td>${esc(a.detail)}</td></tr>`)).join("")}</tbody>
+    </table></div></div>
+    <div class="card"><h3>Reglas del sensor</h3><table>
+      <thead><tr><th>Regla</th><th>Técnica</th><th>Severidad</th></tr></thead>
+      <tbody>${Object.entries(s.rules).map(([id, r]) => `<tr><td><span class="mono">${id}</span> ${esc(r.name)}</td><td class="mono">${r.technique}</td><td>${pill(r.severity === "alta" ? "serious" : "warning", r.severity[0].toUpperCase() + r.severity.slice(1))}</td></tr>`).join("")}</tbody>
+    </table>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:0">Maestro autorizado: <span class="mono">${s.policy.authorized_masters.join(", ")}</span>. Límite de potencia admitido: ${s.policy.registers["10"].min} a ${s.policy.registers["10"].max} %.</p></div>
+  </div>`;
+})();
+
+/* ---------- En vivo ---------- */
+(function () {
+  const root = $("#v-en-vivo");
+  const offline = `
+  <h2>Laboratorio en vivo</h2>
+  <p class="lead">En esta pestaña se lanza cada ataque contra el inversor emulado y se ven las alertas del sensor en el momento en que ocurren.</p>
+  <div class="card" style="max-width:720px"><h3>El laboratorio no está corriendo</h3>
+    <p style="margin:0;color:var(--muted)">El panel en vivo necesita el servidor local del proyecto. Desde la carpeta del repositorio, ejecutá:</p>
+    <pre class="cmd">python -m lab.live</pre>
+    <p style="margin:0;color:var(--muted)">Se abre este mismo sitio en <span class="mono">http://127.0.0.1:8765</span> con el panel activo. Los resultados de la última ejecución grabada están en la pestaña <a href="#laboratorio">Laboratorio</a>.</p></div>`;
+  root.innerHTML = offline;
+  let meta = null;
+  if (location.protocol.startsWith("http")) fetch("meta").then(r => r.ok ? r.json() : null).then(m => { if (m && m.attacks) { meta = m; start(); } }).catch(() => {});
+
+  function start() {
+    root.innerHTML = `
+    <div class="livehead"><div><h2>Laboratorio en vivo</h2>
+      <p class="lead" style="margin-bottom:14px">La pasarela de protocolos consulta al inversor emulado cada 100 ms. El sensor recibe una copia de cada paquete y alerta mientras el ataque ocurre.</p></div>
+      <span class="pill" id="lv-conn" style="margin-bottom:14px"><i></i>Conectando</span></div>
+    <div class="grid tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="tile"><div class="v" id="lv-pot">— <small>W</small></div><div class="k">potencia real del inversor</div></div>
+      <div class="tile"><div class="v" id="lv-rep">— <small>W</small></div><div class="k">potencia reportada al centro de control</div></div>
+      <div class="tile"><div class="v" id="lv-lim">— <small>%</small></div><div class="k">límite de potencia</div></div>
+      <div class="tile"><div class="v" id="lv-con" style="font-size:20px;line-height:1.5">—</div><div class="k">conexión a la red</div></div>
+      <div class="tile"><div class="v" id="lv-rate">—</div><div class="k">solicitudes Modbus por segundo</div></div>
+      <div class="tile"><div class="v" id="lv-al">0</div><div class="k">alertas desde que abrió el panel</div></div>
+    </div>
+    <div class="grid livecols">
+      <div class="card"><h3>Lanzar un ataque contra el inversor emulado</h3>
+        <div id="lv-attacks">${meta.attacks.map(a => `
+          <div class="attack"><div><b><span class="mono">${a.id}</span> ${esc(a.name)}</b><div class="d">${esc(a.description)}</div></div>
+          <button type="button" class="primary" data-id="${a.id}" id="lv-btn-${a.id}">Lanzar</button>
+          <div class="r" id="lv-res-${a.id}"></div></div>`).join("")}</div>
+        <div style="margin-top:12px"><button id="lv-reset" type="button">Restablecer el inversor</button></div>
+        <p style="color:var(--muted);font-size:13px;margin:10px 0 0">Maestro autorizado: <span class="mono">${meta.ips.gateway}</span>. Inversor: <span class="mono">${meta.ips.inversor}</span>. Equipo desconocido: <span class="mono">${meta.ips.atacante}</span>. Todo corre en esta computadora.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="chart-head"><h3>Potencia del inversor, últimos 60 segundos</h3><span id="lv-c-pot"></span></div>
+          <div class="legend" style="margin:0 0 6px"><span><i class="lsw"></i>Real</span><span><i class="lsw dash"></i>Reportada al centro de control</span></div>
+          <svg id="lv-chart-pot" viewBox="0 0 600 130" width="100%" role="img" aria-label="Potencia real y reportada en el tiempo"></svg>
+          <div class="chart-head" style="margin-top:10px"><h3>Solicitudes Modbus por segundo</h3><span id="lv-c-rate"></span></div>
+          <svg id="lv-chart-rate" viewBox="0 0 600 130" width="100%" role="img" aria-label="Solicitudes por segundo en el tiempo"></svg>
+        </div>
+        <div class="card"><h3>Eventos en vivo</h3>
+          <div class="feed" id="lv-feed"><div style="color:var(--muted);font-size:14px;padding:8px 0" id="lv-empty">Sin alertas. La operación normal no dispara ninguna regla.</div></div></div>
+      </div>
+    </div>`;
+    const hist = []; let alerts = 0, busy = false;
+    const clock = t => new Date(t * 1000).toLocaleTimeString("es-AR", { hour12: false });
+
+    function chart(id, key, labelId, unit, minTop, key2) {
+      const W = 600, H = 130, L = 44, R = 8, T = 8, B = 20;
+      const now = hist.length ? hist[hist.length - 1].t : 0;
+      const pts = hist.filter(p => now - p.t <= 60);
+      const max = Math.max(minTop, ...pts.map(p => p[key]), ...(key2 ? pts.map(p => p[key2]) : [])) * 1.1;
+      const x = t => L + (W - L - R) * (1 - (now - t) / 60);
+      const y = v => T + (H - T - B) * (1 - v / max);
+      const path = k => pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
+      const last = pts[pts.length - 1], top = Math.round(max / 1.1);
+      $(id).innerHTML = `
+        <line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>
+        <line x1="${L}" x2="${W - R}" y1="${y(top)}" y2="${y(top)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+        <text x="${L - 6}" y="${y(0) + 4}" text-anchor="end" font-size="11" class="muted">0</text>
+        <text x="${L - 6}" y="${y(top) + 4}" text-anchor="end" font-size="11" class="muted">${top}</text>
+        <text x="${L}" y="${H - 4}" font-size="11" class="muted">hace 60 s</text><text x="${W - R}" y="${H - 4}" text-anchor="end" font-size="11" class="muted">ahora</text>
+        ${pts.length > 1 ? `<path d="${path(key)} L${x(last.t).toFixed(1)},${y(0)} L${x(pts[0].t).toFixed(1)},${y(0)} Z" fill="var(--mark)" opacity=".12"/>
+        <path d="${path(key)}" fill="none" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round"/>` : ""}
+        ${key2 && pts.length > 1 ? `<path d="${path(key2)}" fill="none" stroke="var(--mark2)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 5"/>` : ""}
+        ${last ? `<circle cx="${x(last.t)}" cy="${y(last[key])}" r="4" fill="var(--mark)" stroke="var(--surface)" stroke-width="2"/>` : ""}
+        ${last && key2 && last[key2] !== last[key] ? `<circle cx="${x(last.t)}" cy="${y(last[key2])}" r="4" fill="var(--mark2)" stroke="var(--surface)" stroke-width="2"/>` : ""}`;
+      if (last) $(labelId).textContent = key2 ? `real: ${last[key]} ${unit} · reportada: ${last[key2]} ${unit}` : `ahora: ${last[key]} ${unit}`;
+    }
+    function addEvent(html, cls, time) {
+      const empty = $("#lv-empty"); if (empty) empty.remove();
+      const el = document.createElement("div");
+      el.className = `ev ${cls} new`;
+      el.innerHTML = `<div class="t">${clock(time)}</div><div>${html}</div>`;
+      $("#lv-feed").prepend(el);
+      while ($("#lv-feed").children.length > 80) $("#lv-feed").lastChild.remove();
+    }
+    $("#lv-attacks").addEventListener("click", e => {
+      const b = e.target.closest("button[data-id]"); if (!b || busy) return;
+      busy = true; document.querySelectorAll("#lv-attacks button").forEach(x => x.disabled = true);
+      $("#lv-res-" + b.dataset.id).textContent = "Ejecutando…";
+      fetch("attack/" + b.dataset.id, { method: "POST" }).then(r => r.json()).then(res => {
+        $("#lv-res-" + res.id).innerHTML = res.outcome === "detectado"
+          ? `${pill("good", "Detectado")} reglas <span class="mono">${res.fired_rules.join(", ")}</span>`
+          : `${pill("critical", "No detectado")} ninguna regla se disparó`;
+      }).catch(() => { $("#lv-res-" + b.dataset.id).textContent = "No se pudo ejecutar. Verificá que el laboratorio siga corriendo."; })
+        .finally(() => { busy = false; document.querySelectorAll("#lv-attacks button").forEach(x => x.disabled = false); });
+    });
+    $("#lv-reset").addEventListener("click", () => fetch("reset", { method: "POST" }));
+
+    const es = new EventSource("events");
+    es.onopen = () => { $("#lv-conn").className = "pill good"; $("#lv-conn").innerHTML = "<i></i>Sensor en vivo"; };
+    es.onerror = () => { $("#lv-conn").className = "pill critical"; $("#lv-conn").innerHTML = "<i></i>Sin conexión con el laboratorio"; };
+    es.addEventListener("state", e => {
+      const s = JSON.parse(e.data);
+      const rep = s.potencia_reportada_w == null ? s.potencia_w : s.potencia_reportada_w;
+      $("#lv-pot").innerHTML = `${s.potencia_w} <small>W</small>`;
+      $("#lv-rep").innerHTML = `${rep} <small>W</small>`;
+      $("#lv-lim").innerHTML = `${s.limite_pct} <small>%</small>`;
+      $("#lv-con").innerHTML = pill(s.conectado ? "good" : "critical", s.conectado ? "Conectado" : "Desconectado");
+      $("#lv-rate").textContent = s.solicitudes_por_segundo;
+      hist.push({ t: s.time, pot: s.potencia_w, rep, rate: s.solicitudes_por_segundo });
+      while (hist.length > 200) hist.shift();
+      chart("#lv-chart-pot", "pot", "#lv-c-pot", "W", 4000, "rep");
+      chart("#lv-chart-rate", "rate", "#lv-c-rate", "por segundo", 50);
+    });
+    es.addEventListener("alert", e => {
+      const a = JSON.parse(e.data); alerts++; $("#lv-al").textContent = alerts;
+      addEvent(`${pill(a.severity === "alta" ? "serious" : "warning", "Alerta " + a.severity)} <span class="mono">${a.rule}</span> <b>${esc(a.name)}</b> <span class="mono">${a.technique}</span><br>${esc(a.detail)} · origen <span class="mono">${a.source}</span>`, "alert", a.time);
+    });
+    es.addEventListener("attack", e => { const a = JSON.parse(e.data); addEvent(`Ataque lanzado: <span class="mono">${a.id}</span> ${esc(a.name)}`, "info", a.time); });
+    es.addEventListener("reset", e => addEvent("Inversor restablecido: límite 100 % y conectado", "info", JSON.parse(e.data).time));
+  }
+})();
+
+/* ---------- Expertos ---------- */
+(function () {
+  const E = DATA.experts;
+  const items = E.items.slice().sort((a, b) => b.median - a.median || a.id.localeCompare(b.id));
+  const W = 640, RH = 26, LX = 300, PW = W - LX - 20, H = items.length * RH + 30;
+  const x = v => LX + (v - 1) / 4 * PW;
+  const rows = items.map((it, i) => {
+    const y = i * RH + RH / 2, t = threatById[it.id];
+    const title = t.title.length > 38 ? t.title.slice(0, 37) + "…" : t.title;
+    return `<g data-tip="${esc(it.id + " " + t.title + ". Mediana " + it.median + ", rango intercuartil " + it.q1 + " a " + it.q3 + ".")}">
+      <rect x="0" y="${i * RH}" width="${W}" height="${RH}" fill="transparent"/>
+      <text x="0" y="${y + 4}" font-size="12" font-family="var(--font-mono)">${it.id}</text>
+      <text x="36" y="${y + 4}" font-size="12.5">${esc(title)}</text>
+      <line x1="${x(it.q1)}" x2="${x(it.q3)}" y1="${y}" y2="${y}" stroke="var(--mark)" stroke-width="6" stroke-linecap="round" opacity=".35"/>
+      <circle cx="${x(it.median)}" cy="${y}" r="5.5" fill="var(--mark)" stroke="var(--surface)" stroke-width="2"/>
+    </g>`;
+  }).join("");
+  const grid = [1, 2, 3, 4, 5].map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="0" y2="${items.length * RH}" stroke="var(--line)"/><text x="${x(v)}" y="${items.length * RH + 18}" font-size="12" text-anchor="middle" class="muted">${v}</text>`).join("");
+  const agree = E.items.filter(i => i.consensus).length;
+  $("#v-expertos").innerHTML = `
+  <h2>Consulta a expertos</h2>
+  <p class="note">Las respuestas de esta vista son sintéticas, generadas para mostrar el análisis. Se reemplazan cargando el CSV real de la consulta.</p>
+  <p class="lead">Cada experto califica la relevancia de cada amenaza de 1 a 5. El coeficiente W de Kendall mide el acuerdo general: 0 es ninguno y 1 es total.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${E.experts}</div><div class="k">expertos consultados</div></div>
+    <div class="tile"><div class="v">${E.kendall_w.toFixed(2)}</div><div class="k">W de Kendall (acuerdo general)</div></div>
+    <div class="tile"><div class="v">${agree} <small>de ${E.items.length}</small></div><div class="k">amenazas con consenso (rango intercuartil de 1 o menos)</div></div>
+    <div class="tile"><div class="v">${E.spearman_vs_model.toFixed(2)}</div><div class="k">correlación de Spearman con el riesgo del modelo</div></div>
+  </div>
+  <div class="card"><h3>Relevancia según los expertos, por amenaza</h3>
+    <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:560px;max-width:820px" role="img" aria-label="Mediana y rango intercuartil de relevancia por amenaza">${grid}${rows}</svg></div>
+    <div class="legend"><span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="var(--mark)"/></svg>Mediana</span><span><svg width="26" height="14"><line x1="3" x2="23" y1="7" y2="7" stroke="var(--mark)" stroke-width="6" stroke-linecap="round" opacity=".35"/></svg>Rango intercuartil</span><span>Escala: 1 poco relevante, 5 muy relevante</span></div>
+  </div>`;
+})();
+
+/* ---------- Madurez ---------- */
+(function () {
+  const M = DATA.maturity, KEY = "der-ot-madurez-v1";
+  const qs = M.domains.flatMap(d => d.questions.map(q => ({ ...q, domain: d.id })));
+  const EXAMPLE = { q1: 1, q2: 1, q3: 0, q4: 1, q5: 2, q6: 1, q7: 2, q8: 1, q9: 0, q10: 0, q11: 0, q12: 1, q13: 1, q14: 2, q15: 3, q16: 1, q17: 1, q18: 0 };
+  let ans = null, isExample = true;
+  try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved && typeof saved === "object") { ans = saved; isExample = false; } } catch (e) {}
+  if (!ans) ans = { ...EXAMPLE };
+  const root = $("#v-madurez");
+  root.innerHTML = `
+  <h2>Indicadores de madurez</h2>
+  <p class="lead">Autoevaluación para distribuidoras y cooperativas. Cada afirmación se califica de 0 a 3. ${esc(M.meta.note)}</p>
+  <p class="note" id="m-state"></p>
+  <div class="grid two">
+    <div class="card">
+      <div class="legend" style="margin:0 0 10px">${M.meta.levels.map((l, i) => `<span><b>${i}</b> ${esc(l)}</span>`).join("")}</div>
+      ${M.domains.map(d => `<h3 style="margin-top:16px">${esc(d.name)}</h3>${d.questions.map(q => `<div class="q"><div>${esc(q.text)}</div><div class="seg" role="radiogroup" aria-label="${esc(q.text)}">${[0, 1, 2, 3].map(v => `<label data-tip="${esc(M.meta.levels[v])}"><input type="radio" name="${q.id}" id="${q.id}-${v}" value="${v}"><span>${v}</span></label>`).join("")}</div></div>`).join("")}`).join("")}
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button id="m-clear" type="button">Borrar respuestas</button><button id="m-example" type="button">Cargar el ejemplo</button></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Resultado</h3><div class="tile" style="border:0;padding:0"><div class="v" id="m-score"></div><div class="k" id="m-count"></div></div><div id="m-radar" style="margin-top:8px"></div><div id="m-bars"></div></div>
+      <div class="card"><h3>Prioridades de mejora</h3><div id="m-advice"></div></div>
+    </div>
+  </div>`;
+  function draw() {
+    qs.forEach(q => [0, 1, 2, 3].forEach(v => { $(`#${q.id}-${v}`).checked = ans[q.id] === v; }));
+    $("#m-state").textContent = isExample ? "Se muestran respuestas de ejemplo de una cooperativa tipo. Al cambiar cualquier respuesta, la evaluación pasa a ser la tuya y se guarda solo en este navegador." : "Tus respuestas se guardan solo en este navegador.";
+    const dom = M.domains.map(d => {
+      const vals = d.questions.map(q => ans[q.id]).filter(v => v != null);
+      return { name: d.name, pct: vals.length ? vals.reduce((a, b) => a + b, 0) / (vals.length * 3) : 0, n: vals.length };
+    });
+    const all = qs.map(q => ans[q.id]).filter(v => v != null);
+    const total = all.length ? Math.round(all.reduce((a, b) => a + b, 0) / (all.length * 3) * 100) : 0;
+    $("#m-score").innerHTML = `${total} <small>%</small>`;
+    $("#m-count").textContent = `madurez general, con ${all.length} de ${qs.length} respuestas`;
+    const R = 88, C = 185, n = dom.length;
+    const pt = (i, r) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [C + r * Math.cos(a), 125 + r * Math.sin(a)]; };
+    const ring = f => dom.map((_, i) => pt(i, R * f).join(",")).join(" ");
+    $("#m-radar").innerHTML = `<svg viewBox="0 0 370 250" width="100%" style="max-width:400px;display:block;margin:auto" role="img" aria-label="Madurez por dominio">
+      ${[1 / 3, 2 / 3, 1].map(f => `<polygon points="${ring(f)}" fill="none" stroke="var(--line)"/>`).join("")}
+      ${dom.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${C}" y1="125" x2="${x}" y2="${y}" stroke="var(--line)"/>`; }).join("")}
+      <polygon points="${dom.map((d, i) => pt(i, R * d.pct).join(",")).join(" ")}" fill="var(--mark)" fill-opacity=".22" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round"/>
+      ${dom.map((d, i) => { const [x, y] = pt(i, R * d.pct); return `<circle cx="${x}" cy="${y}" r="4" fill="var(--mark)" stroke="var(--surface)" stroke-width="2" data-tip="${esc(d.name)}: ${Math.round(d.pct * 100)} %"/>`; }).join("")}
+      ${dom.map((d, i) => { const [x, y] = pt(i, R + 14); const w = d.name.split(" "); return `<text x="${x}" y="${y + 4}" font-size="11" class="muted" text-anchor="${Math.abs(x - C) < 5 ? "middle" : x > C ? "start" : "end"}">${esc(w[0])}</text>`; }).join("")}
+    </svg>`;
+    $("#m-bars").innerHTML = dom.map(d => `<div class="drow"><span>${esc(d.name)}</span><div class="bar"><b style="width:${d.pct * 100}%"></b></div><span class="p">${Math.round(d.pct * 100)} %</span></div>`).join("");
+    const low = qs.filter(q => ans[q.id] != null && ans[q.id] <= 1).sort((a, b) => ans[a.id] - ans[b.id]).slice(0, 5);
+    $("#m-advice").innerHTML = low.length ? `<ol class="plain">${low.map(q => `<li style="margin-bottom:6px">${esc(q.advice)} <span style="color:var(--muted);font-size:13px">(nivel actual ${ans[q.id]})</span></li>`).join("")}</ol>`
+      : `<p style="color:var(--muted);font-size:14px;margin:0">${all.length ? "Ninguna respuesta está en nivel 0 o 1." : "Respondé el cuestionario para ver las prioridades."}</p>`;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(ans)); } catch (e) {} }
+  root.addEventListener("change", e => {
+    if (e.target.type !== "radio") return;
+    ans[e.target.name] = +e.target.value; isExample = false; save(); draw();
+  });
+  $("#m-clear").addEventListener("click", () => { ans = {}; isExample = false; save(); draw(); });
+  $("#m-example").addEventListener("click", () => { ans = { ...EXAMPLE }; isExample = true; try { localStorage.removeItem(KEY); } catch (e) {} draw(); });
+  draw();
+})();
+
+$("#foot").textContent = "Prototipo de investigación. El laboratorio valida la lógica de detección sobre equipos emulados y no reemplaza pruebas con equipos reales.";
+route();
+</script>
+</body>
+</html>

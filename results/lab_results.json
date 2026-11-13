@@ -1,0 +1,446 @@
+{
+  "summary": {
+    "generated": "2026-11-13T01:48:06+00:00",
+    "attacks": 8,
+    "detected": 6,
+    "baseline_packets": 796,
+    "baseline_requests": 398,
+    "baseline_seconds": 20.0,
+    "baseline_alerts": 0,
+    "rules": {
+      "R1": {
+        "name": "Maestro Modbus no autorizado",
+        "technique": "T0846",
+        "severity": "media"
+      },
+      "R2": {
+        "name": "Escritura desde un maestro no autorizado",
+        "technique": "T0855",
+        "severity": "alta"
+      },
+      "R3": {
+        "name": "Consigna fuera de los límites de ingeniería",
+        "technique": "T0836",
+        "severity": "alta"
+      },
+      "R4": {
+        "name": "Orden de desconexión del inversor",
+        "technique": "T0816",
+        "severity": "alta"
+      },
+      "R5": {
+        "name": "Solicitud de identificación o diagnóstico",
+        "technique": "T0888",
+        "severity": "media"
+      },
+      "R6": {
+        "name": "Barrido de registros",
+        "technique": "T0846",
+        "severity": "media"
+      },
+      "R7": {
+        "name": "Tasa de solicitudes anómala",
+        "technique": "T0814",
+        "severity": "alta"
+      },
+      "R8": {
+        "name": "Telemetría físicamente incoherente",
+        "technique": "T0856",
+        "severity": "alta"
+      }
+    },
+    "policy": {
+      "comment": "Política del sensor pasivo, derivada de la arquitectura de referencia.",
+      "modbus_port": 502,
+      "authorized_masters": [
+        "10.10.15.30"
+      ],
+      "registers": {
+        "10": {
+          "name": "Límite de potencia (%)",
+          "min": 20,
+          "max": 100
+        },
+        "11": {
+          "name": "Conexión a red (1 = conectado)",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "disconnect": {
+        "register": 11,
+        "value": 0
+      },
+      "max_requests_per_second": 50,
+      "max_illegal_address_errors": 3,
+      "coherence": {
+        "comment": "La potencia reportada no puede superar la nominal por el límite, ni ser mayor que cero con el inversor desconectado.",
+        "power_register": 0,
+        "limit_register": 10,
+        "connection_register": 11,
+        "rated_w": 5000,
+        "tolerance": 0.05,
+        "consecutive_readings": 2
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "id": "S0",
+      "name": "Operación normal",
+      "description": "La pasarela consulta al inversor cada 100 ms. Mide los falsos positivos.",
+      "threat": null,
+      "expected_rules": [],
+      "fired_rules": [],
+      "missing_rules": [],
+      "outcome": "sin alertas",
+      "stealth": false,
+      "packets": 796,
+      "requests": 398,
+      "masters": [
+        "10.10.15.30"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": true,
+        "potencia_w": 4000
+      },
+      "alerts": [],
+      "pcap": "results/pcap/S0.pcap"
+    },
+    {
+      "id": "S1",
+      "name": "Escritura no autorizada del límite de potencia",
+      "description": "Un equipo desconocido baja el límite de potencia al 30 %.",
+      "threat": "A15",
+      "expected_rules": [
+        "R2"
+      ],
+      "fired_rules": [
+        "R1",
+        "R2"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 42,
+      "requests": 21,
+      "masters": [
+        "10.10.15.30",
+        "10.10.40.99"
+      ],
+      "inverter_state": {
+        "limite_pct": 30,
+        "conectado": true,
+        "potencia_w": 1200
+      },
+      "alerts": [
+        {
+          "rule": "R1",
+          "name": "Maestro Modbus no autorizado",
+          "technique": "T0846",
+          "severity": "media",
+          "time": 1794534475.371,
+          "source": "10.10.40.99",
+          "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
+        },
+        {
+          "rule": "R2",
+          "name": "Escritura desde un maestro no autorizado",
+          "technique": "T0855",
+          "severity": "alta",
+          "time": 1794534475.371,
+          "source": "10.10.40.99",
+          "detail": "Escritura con código de función 6 desde 10.10.40.99"
+        }
+      ],
+      "pcap": "results/pcap/S1.pcap"
+    },
+    {
+      "id": "S2",
+      "name": "Reconocimiento",
+      "description": "Un equipo desconocido pide la identificación y recorre registros.",
+      "threat": "A17",
+      "expected_rules": [
+        "R1",
+        "R5",
+        "R6"
+      ],
+      "fired_rules": [
+        "R1",
+        "R5",
+        "R6"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 54,
+      "requests": 27,
+      "masters": [
+        "10.10.15.30",
+        "10.10.40.99"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": true,
+        "potencia_w": 4000
+      },
+      "alerts": [
+        {
+          "rule": "R1",
+          "name": "Maestro Modbus no autorizado",
+          "technique": "T0846",
+          "severity": "media",
+          "time": 1794534476.43,
+          "source": "10.10.40.99",
+          "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
+        },
+        {
+          "rule": "R5",
+          "name": "Solicitud de identificación o diagnóstico",
+          "technique": "T0888",
+          "severity": "media",
+          "time": 1794534476.43,
+          "source": "10.10.40.99",
+          "detail": "Código de función 43, ausente en la operación normal"
+        },
+        {
+          "rule": "R6",
+          "name": "Barrido de registros",
+          "technique": "T0846",
+          "severity": "media",
+          "time": 1794534476.432,
+          "source": "10.10.40.99",
+          "detail": "3 lecturas a direcciones inexistentes"
+        }
+      ],
+      "pcap": "results/pcap/S2.pcap"
+    },
+    {
+      "id": "S3",
+      "name": "Consigna fuera de rango",
+      "description": "El maestro autorizado envía un límite del 5 %, por debajo del mínimo de ingeniería.",
+      "threat": "A18",
+      "expected_rules": [
+        "R3"
+      ],
+      "fired_rules": [
+        "R3"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 42,
+      "requests": 21,
+      "masters": [
+        "10.10.15.30"
+      ],
+      "inverter_state": {
+        "limite_pct": 5,
+        "conectado": true,
+        "potencia_w": 200
+      },
+      "alerts": [
+        {
+          "rule": "R3",
+          "name": "Consigna fuera de los límites de ingeniería",
+          "technique": "T0836",
+          "severity": "alta",
+          "time": 1794534477.492,
+          "source": "10.10.15.30",
+          "detail": "Límite de potencia (%): valor 5, fuera de 20 a 100"
+        }
+      ],
+      "pcap": "results/pcap/S3.pcap"
+    },
+    {
+      "id": "S4",
+      "name": "Inundación de solicitudes",
+      "description": "Un equipo desconocido envía 300 solicitudes seguidas.",
+      "threat": "A19",
+      "expected_rules": [
+        "R7"
+      ],
+      "fired_rules": [
+        "R1",
+        "R7"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 644,
+      "requests": 322,
+      "masters": [
+        "10.10.15.30",
+        "10.10.40.99"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": true,
+        "potencia_w": 4000
+      },
+      "alerts": [
+        {
+          "rule": "R1",
+          "name": "Maestro Modbus no autorizado",
+          "technique": "T0846",
+          "severity": "media",
+          "time": 1794534478.553,
+          "source": "10.10.40.99",
+          "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
+        },
+        {
+          "rule": "R7",
+          "name": "Tasa de solicitudes anómala",
+          "technique": "T0814",
+          "severity": "alta",
+          "time": 1794534478.558,
+          "source": "10.10.40.99",
+          "detail": "Más de 50 solicitudes por segundo"
+        }
+      ],
+      "pcap": "results/pcap/S4.pcap"
+    },
+    {
+      "id": "S5",
+      "name": "Desconexión del inversor",
+      "description": "Un equipo desconocido envía la orden de desconexión.",
+      "threat": "A16",
+      "expected_rules": [
+        "R4"
+      ],
+      "fired_rules": [
+        "R1",
+        "R2",
+        "R4"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 42,
+      "requests": 21,
+      "masters": [
+        "10.10.15.30",
+        "10.10.40.99"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": false,
+        "potencia_w": 0
+      },
+      "alerts": [
+        {
+          "rule": "R1",
+          "name": "Maestro Modbus no autorizado",
+          "technique": "T0846",
+          "severity": "media",
+          "time": 1794534479.718,
+          "source": "10.10.40.99",
+          "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
+        },
+        {
+          "rule": "R2",
+          "name": "Escritura desde un maestro no autorizado",
+          "technique": "T0855",
+          "severity": "alta",
+          "time": 1794534479.718,
+          "source": "10.10.40.99",
+          "detail": "Escritura con código de función 6 desde 10.10.40.99"
+        },
+        {
+          "rule": "R4",
+          "name": "Orden de desconexión del inversor",
+          "technique": "T0816",
+          "severity": "alta",
+          "time": 1794534479.718,
+          "source": "10.10.40.99",
+          "detail": "Escritura que desconecta el inversor de la red"
+        }
+      ],
+      "pcap": "results/pcap/S5.pcap"
+    },
+    {
+      "id": "S6",
+      "name": "Consigna válida con identidad del maestro",
+      "description": "Desde el maestro autorizado se envía un límite del 60 %, dentro de rango. En la red es igual a una operación legítima.",
+      "threat": "A20",
+      "expected_rules": [],
+      "fired_rules": [],
+      "missing_rules": [],
+      "outcome": "no detectado",
+      "stealth": true,
+      "packets": 42,
+      "requests": 21,
+      "masters": [
+        "10.10.15.30"
+      ],
+      "inverter_state": {
+        "limite_pct": 60,
+        "conectado": true,
+        "potencia_w": 2400
+      },
+      "alerts": [],
+      "pcap": "results/pcap/S6.pcap"
+    },
+    {
+      "id": "S7",
+      "name": "Datos falsos físicamente imposibles",
+      "description": "Un intermediario hace que el inversor reporte 6500 W, más que su potencia nominal de 5000 W.",
+      "threat": "A26",
+      "expected_rules": [
+        "R8"
+      ],
+      "fired_rules": [
+        "R8"
+      ],
+      "missing_rules": [],
+      "outcome": "detectado",
+      "stealth": false,
+      "packets": 100,
+      "requests": 50,
+      "masters": [
+        "10.10.15.30"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": true,
+        "potencia_w": 4000
+      },
+      "alerts": [
+        {
+          "rule": "R8",
+          "name": "Telemetría físicamente incoherente",
+          "technique": "T0856",
+          "severity": "alta",
+          "time": 1794534481.941,
+          "source": "10.10.40.21",
+          "detail": "Reporta 6500 W, por encima del máximo posible de 5250 W con límite 100 %"
+        }
+      ],
+      "pcap": "results/pcap/S7.pcap"
+    },
+    {
+      "id": "S8",
+      "name": "Datos falsos coherentes con el modelo",
+      "description": "Un intermediario hace que el inversor reporte 2000 W en lugar de los 4000 W reales. El valor es físicamente posible.",
+      "threat": "A27",
+      "expected_rules": [],
+      "fired_rules": [],
+      "missing_rules": [],
+      "outcome": "no detectado",
+      "stealth": true,
+      "packets": 100,
+      "requests": 50,
+      "masters": [
+        "10.10.15.30"
+      ],
+      "inverter_state": {
+        "limite_pct": 100,
+        "conectado": true,
+        "potencia_w": 4000
+      },
+      "alerts": [],
+      "pcap": "results/pcap/S8.pcap"
+    }
+  ]
+}

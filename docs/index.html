@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciberseguridad OT en redes con DER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap" rel="stylesheet">
+<style>
+/* Layout: barra de etapas arriba, una vista por etapa, resumen antes del detalle. */
+:root {
+  color-scheme: light;
+  --bg: #f3f5f4; --surface: #ffffff; --ink: #16201e; --muted: #56625f; --line: #d8dedc;
+  --accent: #0f6b6e; --accent-soft: #e1eeee; --mark: #2a78d6; --mark2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1413; --surface: #191f1e; --ink: #e7edeb; --muted: #9ba9a5; --line: #2e3836;
+    --accent: #56bcbd; --accent-soft: #17302f; --mark: #3987e5; --mark2: #d95926;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1413; --surface: #191f1e; --ink: #e7edeb; --muted: #9ba9a5; --line: #2e3836;
+  --accent: #56bcbd; --accent-soft: #17302f; --mark: #3987e5; --mark2: #d95926;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
+header.top { padding: 28px 0 14px; }
+header.top h1 { font: 600 30px/1.15 var(--font-display); margin: 0 0 6px; text-wrap: balance; }
+header.top p { margin: 0; color: var(--muted); max-width: 68ch; }
+nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0; position: sticky; top: 0; background: var(--bg); z-index: 5; border-bottom: 1px solid var(--line); }
+nav a { text-decoration: none; color: var(--muted); padding: 7px 12px; border-radius: 6px; font-weight: 500; font-size: 14px; }
+nav a .n { font-family: var(--font-mono); font-size: 12px; margin-right: 6px; opacity: .8; }
+nav a:hover { color: var(--ink); background: var(--accent-soft); }
+nav a[aria-current="page"] { background: var(--accent); color: var(--surface); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section.view { display: none; padding-top: 24px; }
+section.view.on { display: block; }
+h2 { font: 600 22px/1.2 var(--font-display); margin: 0 0 4px; text-wrap: balance; }
+h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.lead { color: var(--muted); max-width: 70ch; margin: 0 0 18px; }
+.grid { display: grid; gap: 14px; }
+.tiles { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 18px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.tile .v { font: 600 30px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.tile .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.two { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.note { border-left: 3px solid var(--warning); background: var(--surface); padding: 10px 14px; border-radius: 0 6px 6px 0; color: var(--muted); font-size: 14px; margin: 0 0 18px; max-width: 80ch; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td, tr.sel td { background: var(--accent-soft); }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px 1px 7px; font-size: 12.5px; white-space: nowrap; background: var(--surface); }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.pill.good i { background: var(--good); } .pill.warning i { background: var(--warning); }
+.pill.serious i { background: var(--serious); } .pill.critical i { background: var(--critical); }
+.stage { display: block; text-decoration: none; color: inherit; }
+.stage:hover { border-color: var(--accent); }
+.stage .tag { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.stage p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.stages { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; align-items: end; }
+label.f { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+select, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); }
+svg text { font-family: var(--font-body); fill: var(--ink); }
+svg .muted { fill: var(--muted); }
+.asset { cursor: pointer; }
+.asset rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.asset:hover rect, .asset.sel rect { stroke: var(--accent); stroke-width: 2; }
+.flow { fill: none; stroke: var(--muted); stroke-width: 1.4; opacity: .55; }
+.flow.bad { stroke: var(--critical); stroke-dasharray: 6 4; stroke-width: 2; opacity: .95; }
+.flow.hi { stroke-width: 3.5; opacity: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 0; border-top: 2px solid var(--muted); }
+.sw.bad { border-top: 2px dashed var(--critical); }
+.sq { width: 12px; height: 12px; border-radius: 3px; }
+.matrix { display: grid; grid-template-columns: 28px repeat(5, minmax(0, 1fr)); gap: 2px; font-size: 12px; }
+.matrix .ax { display: flex; align-items: center; justify-content: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell { min-height: 58px; border-radius: 4px; padding: 5px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+.chip { font-family: var(--font-mono); font-size: 11.5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; cursor: pointer; line-height: 1.6; }
+.chip:hover, .chip.sel { border-color: var(--ink); }
+.chip.dim { opacity: .3; }
+.xc { width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+.xc[aria-pressed="true"] { border-color: var(--ink); }
+.axis-title { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+dl.kv dt { color: var(--muted); } dl.kv dd { margin: 0; }
+ul.plain { margin: 0; padding-left: 18px; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 5px; font-size: 12.5px; max-width: 280px; display: none; z-index: 20; }
+.q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 560px) { .q { grid-template-columns: minmax(0, 1fr); } }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 4px 12px; font-variant-numeric: tabular-nums; font-size: 14px; border-left: 1px solid var(--line); }
+.seg label:first-child span { border-left: 0; }
+.seg input:checked + span { background: var(--accent); color: var(--surface); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.bar b { display: block; height: 100%; background: var(--mark); border-radius: 0 4px 4px 0; }
+.drow { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 14px; padding: 4px 0; }
+.drow .p { text-align: right; font-variant-numeric: tabular-nums; }
+button.primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+.livecols { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: start; margin-top: 14px; }
+@media (max-width: 860px) { .livecols { grid-template-columns: minmax(0, 1fr); } }
+.livehead { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; }
+.attack { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.attack:last-of-type { border-bottom: 0; }
+.attack .d { color: var(--muted); font-size: 13.5px; }
+.attack .r { grid-column: 1 / -1; min-height: 22px; font-size: 13.5px; color: var(--muted); }
+.feed { display: grid; max-height: 520px; overflow-y: auto; }
+.ev { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; padding: 8px 0 8px 10px; border-bottom: 1px solid var(--line); border-left: 3px solid var(--line); font-size: 14px; }
+.ev .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+.ev.alert { border-left-color: var(--critical); }
+.ev.info { color: var(--muted); }
+.ev.new { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .ev.new { animation: none; } }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.chart-head span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.lsw { width: 16px; height: 3px; border-radius: 2px; background: var(--mark); }
+.lsw.dash { width: 21px; background: repeating-linear-gradient(90deg, var(--mark2) 0 5px, transparent 5px 8px); }
+pre.cmd { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font: 14px var(--font-mono); overflow-x: auto; margin: 10px 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Ciberseguridad OT en redes de distribución con DER</h1>
+  <p>Arquitectura de referencia, modelo de amenazas, laboratorio de detección e indicadores de madurez para redes eléctricas con generación distribuida.</p>
+</header>
+<nav id="nav" aria-label="Etapas"></nav>
+
+<section class="view" id="v-resumen"></section>
+<section class="view" id="v-arquitectura"></section>
+<section class="view" id="v-amenazas"></section>
+<section class="view" id="v-laboratorio"></section>
+<section class="view" id="v-en-vivo"></section>
+<section class="view" id="v-expertos"></section>
+<section class="view" id="v-madurez"></section>
+
+<footer id="foot"></footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = {"architecture": {"meta": {"title": "Arquitectura de referencia: red de distribución con DER", "source": "Ciberseguridad en Redes Eléctricas Inteligentes con Generación Distribuida: Revisión Estructurada y Matriz de Controles para Entornos IT/OT (CONAIISI 2026)", "scope": "Escenario hipotético de una localidad del interior de la provincia de Santa Fe. No describe un despliegue real.", "note": "Las seis zonas provienen de la Sección 3 del trabajo. Los activos, direcciones, conductos y flujos son una propuesta de la Etapa 2 y deben reemplazarse con información institucional verificable."}, "zones": [{"id": "PROV", "short": "Proveedores", "name": "Proveedores y cadena de suministro", "paper": true, "purdue": "Terceros", "description": "Fabricantes, integradores y servicios externos con acceso lógico o físico, incluidos los canales de actualización.", "frameworks": ["NIST CSF 2.0", "IEC 62443", "NIST SP 800-82 Rev. 3"]}, {"id": "IT", "short": "TI corporativa", "name": "TI corporativa", "paper": false, "purdue": "Nivel 4", "description": "Red administrativa de la distribuidora o cooperativa.", "frameworks": []}, {"id": "TEL", "short": "Telecomunicación", "name": "Redes de telecomunicación y pasarelas de integración", "paper": true, "purdue": "Nivel 3.5", "description": "Enlaces, pasarelas de protocolo y servicios de acceso remoto que interconectan las demás zonas.", "frameworks": ["IEC 62351", "NISTIR 7628 Rev. 1", "NIST SP 800-82 Rev. 3"]}, {"id": "CC", "short": "Centro de control", "name": "Centro de control y supervisión", "paper": true, "purdue": "Nivel 3", "description": "SCADA, interfaces de operación, historiadores y estaciones de ingeniería.", "frameworks": ["NIST SP 800-82 Rev. 3", "NIST CSF 2.0", "IEC 62443"]}, {"id": "SE", "short": "Subestaciones", "name": "Automatización de subestaciones", "paper": true, "purdue": "Niveles 1-2", "description": "IED, RTU, PLC y relés de protección.", "frameworks": ["IEC 62443", "IEC 62351", "IEC 61850", "NIST SP 800-82 Rev. 3"]}, {"id": "DER", "short": "DER", "name": "Recursos energéticos distribuidos (DER)", "paper": true, "purdue": "Niveles 0-1", "description": "Inversores inteligentes, almacenamiento y controladores de microrredes, fuera de las instalaciones de la distribuidora.", "frameworks": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"]}, {"id": "AMI", "short": "AMI", "name": "Infraestructura de medición avanzada (AMI)", "paper": true, "purdue": "Niveles 0-2", "description": "Medidores inteligentes, concentradores de datos y sistemas de cabecera.", "frameworks": ["NISTIR 7628 Rev. 1", "NIST CSF 2.0", "IEC 62351"]}], "assets": [{"id": "nube-fabricante", "name": "Nube del fabricante", "zone": "PROV", "type": "Servicio en la nube", "ip": "203.0.113.50", "description": "Portal del fabricante de inversores para monitoreo y actualización."}, {"id": "proveedor-remoto", "name": "Proveedor remoto", "zone": "PROV", "type": "Integrador", "ip": "198.51.100.20", "description": "Integrador que brinda soporte remoto."}, {"id": "pc-admin", "name": "PC administrativas", "zone": "IT", "type": "PC de oficina", "ip": "10.10.0.25", "description": "Puestos de facturación, comercial y oficina técnica."}, {"id": "servidor-salto", "name": "Servidor de salto", "zone": "TEL", "type": "Acceso remoto", "ip": "10.10.15.10", "description": "Único punto de entrada interactivo hacia la red OT."}, {"id": "pasarela-datos", "name": "Pasarela de datos", "zone": "TEL", "type": "Pasarela de integración", "ip": "10.10.15.20", "description": "Réplica de solo lectura del historiador para TI."}, {"id": "gateway", "name": "Pasarela protocolos", "zone": "TEL", "type": "Pasarela de protocolo", "ip": "10.10.15.30", "description": "Traduce IEC 60870-5-104 a Modbus/TCP hacia los DER."}, {"id": "scada", "name": "SCADA / HMI", "zone": "CC", "type": "Servidor SCADA", "ip": "10.10.20.10", "description": "Supervisión y control de la red de distribución."}, {"id": "historiador", "name": "Historiador", "zone": "CC", "type": "Servidor", "ip": "10.10.20.20", "description": "Registro histórico de mediciones y eventos."}, {"id": "estacion-ingenieria", "name": "Estación de ingeniería", "zone": "CC", "type": "PC de ingeniería", "ip": "10.10.20.30", "description": "Configuración de RTU, relés e inversores."}, {"id": "rtu", "name": "RTU", "zone": "SE", "type": "Unidad terminal remota", "ip": "10.10.30.5", "description": "Telecontrol de la subestación hacia el SCADA."}, {"id": "rele", "name": "IED y relés", "zone": "SE", "type": "IED", "ip": "10.10.30.15", "description": "Protección de alimentadores."}, {"id": "inversor", "name": "Inversor inteligente", "zone": "DER", "type": "Inversor", "ip": "10.10.40.21", "description": "Inversor fotovoltaico de usuario-generador, con interfaz Modbus/TCP."}, {"id": "data-logger", "name": "Controlador de planta", "zone": "DER", "type": "Controlador", "ip": "10.10.40.30", "description": "Recolecta datos del inversor y los envía a la nube del fabricante."}, {"id": "medidor", "name": "Medidor inteligente", "zone": "AMI", "type": "Medidor", "ip": "10.10.50.40", "description": "Mide energía consumida e inyectada."}, {"id": "concentrador", "name": "Concentrador", "zone": "AMI", "type": "Concentrador", "ip": "10.10.50.10", "description": "Agrupa las lecturas de los medidores de un sector."}, {"id": "cabecera", "name": "Sistema de cabecera", "zone": "AMI", "type": "Servidor", "ip": "10.10.50.5", "description": "Recibe las lecturas y habilita funciones remotas de corte y reconexión."}], "conduits": [{"id": "C1", "from": "IT", "to": "TEL", "protocol": "HTTPS", "port": 443, "purpose": "Consulta de datos operativos replicados."}, {"id": "C2", "from": "TEL", "to": "CC", "protocol": "RDP", "port": 3389, "purpose": "Sesión interactiva desde el servidor de salto, con doble factor."}, {"id": "C3", "from": "CC", "to": "TEL", "protocol": "Replicación", "port": 5432, "purpose": "Réplica unidireccional del historiador."}, {"id": "C4", "from": "CC", "to": "SE", "protocol": "IEC 60870-5-104", "port": 2404, "purpose": "Telecontrol de subestaciones."}, {"id": "C5", "from": "CC", "to": "TEL", "protocol": "IEC 60870-5-104", "port": 2404, "purpose": "Consignas a DER a través de la pasarela de protocolos."}, {"id": "C6", "from": "TEL", "to": "DER", "protocol": "Modbus/TCP", "port": 502, "purpose": "Lectura y consignas a inversores desde la pasarela."}, {"id": "C7", "from": "DER", "to": "PROV", "protocol": "MQTT/TLS", "port": 8883, "purpose": "Telemetría saliente hacia la nube del fabricante."}, {"id": "C8", "from": "PROV", "to": "TEL", "protocol": "VPN", "port": 443, "purpose": "Soporte remoto del proveedor, solo hasta el servidor de salto."}, {"id": "C9", "from": "IT", "to": "AMI", "protocol": "HTTPS", "port": 443, "purpose": "Consulta de lecturas para facturación."}], "flows": [{"id": "F1", "src": "pc-admin", "dst": "pasarela-datos", "protocol": "HTTPS", "port": 443}, {"id": "F2", "src": "servidor-salto", "dst": "scada", "protocol": "RDP", "port": 3389}, {"id": "F3", "src": "historiador", "dst": "pasarela-datos", "protocol": "Replicación", "port": 5432}, {"id": "F4", "src": "scada", "dst": "rtu", "protocol": "IEC 60870-5-104", "port": 2404}, {"id": "F5", "src": "scada", "dst": "gateway", "protocol": "IEC 60870-5-104", "port": 2404}, {"id": "F6", "src": "gateway", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502}, {"id": "F7", "src": "data-logger", "dst": "nube-fabricante", "protocol": "MQTT/TLS", "port": 8883}, {"id": "F8", "src": "proveedor-remoto", "dst": "servidor-salto", "protocol": "VPN", "port": 443}, {"id": "F9", "src": "data-logger", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502}, {"id": "F10", "src": "medidor", "dst": "concentrador", "protocol": "DLMS/COSEM", "port": 4059}, {"id": "F11", "src": "concentrador", "dst": "cabecera", "protocol": "DLMS/COSEM", "port": 4059}, {"id": "F12", "src": "pc-admin", "dst": "cabecera", "protocol": "HTTPS", "port": 443}, {"id": "F13", "src": "estacion-ingenieria", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "note": "Configuración directa sin pasar por la pasarela."}, {"id": "F14", "src": "nube-fabricante", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "note": "Puerto del inversor expuesto a Internet."}, {"id": "F15", "src": "pc-admin", "dst": "scada", "protocol": "RDP", "port": 3389, "note": "Acceso directo desde TI sin servidor de salto."}]}, "validation": {"errors": [], "flows": [{"id": "F1", "src": "pc-admin", "dst": "pasarela-datos", "protocol": "HTTPS", "port": 443, "src_zone": "IT", "dst_zone": "TEL", "status": "permitido", "reason": "Conducto C1", "conduit": "C1"}, {"id": "F2", "src": "servidor-salto", "dst": "scada", "protocol": "RDP", "port": 3389, "src_zone": "TEL", "dst_zone": "CC", "status": "permitido", "reason": "Conducto C2", "conduit": "C2"}, {"id": "F3", "src": "historiador", "dst": "pasarela-datos", "protocol": "Replicación", "port": 5432, "src_zone": "CC", "dst_zone": "TEL", "status": "permitido", "reason": "Conducto C3", "conduit": "C3"}, {"id": "F4", "src": "scada", "dst": "rtu", "protocol": "IEC 60870-5-104", "port": 2404, "src_zone": "CC", "dst_zone": "SE", "status": "permitido", "reason": "Conducto C4", "conduit": "C4"}, {"id": "F5", "src": "scada", "dst": "gateway", "protocol": "IEC 60870-5-104", "port": 2404, "src_zone": "CC", "dst_zone": "TEL", "status": "permitido", "reason": "Conducto C5", "conduit": "C5"}, {"id": "F6", "src": "gateway", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "src_zone": "TEL", "dst_zone": "DER", "status": "permitido", "reason": "Conducto C6", "conduit": "C6"}, {"id": "F7", "src": "data-logger", "dst": "nube-fabricante", "protocol": "MQTT/TLS", "port": 8883, "src_zone": "DER", "dst_zone": "PROV", "status": "permitido", "reason": "Conducto C7", "conduit": "C7"}, {"id": "F8", "src": "proveedor-remoto", "dst": "servidor-salto", "protocol": "VPN", "port": 443, "src_zone": "PROV", "dst_zone": "TEL", "status": "permitido", "reason": "Conducto C8", "conduit": "C8"}, {"id": "F9", "src": "data-logger", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "src_zone": "DER", "dst_zone": "DER", "status": "permitido", "reason": "Dentro de la misma zona", "conduit": null}, {"id": "F10", "src": "medidor", "dst": "concentrador", "protocol": "DLMS/COSEM", "port": 4059, "src_zone": "AMI", "dst_zone": "AMI", "status": "permitido", "reason": "Dentro de la misma zona", "conduit": null}, {"id": "F11", "src": "concentrador", "dst": "cabecera", "protocol": "DLMS/COSEM", "port": 4059, "src_zone": "AMI", "dst_zone": "AMI", "status": "permitido", "reason": "Dentro de la misma zona", "conduit": null}, {"id": "F12", "src": "pc-admin", "dst": "cabecera", "protocol": "HTTPS", "port": 443, "src_zone": "IT", "dst_zone": "AMI", "status": "permitido", "reason": "Conducto C9", "conduit": "C9"}, {"id": "F13", "src": "estacion-ingenieria", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "note": "Configuración directa sin pasar por la pasarela.", "src_zone": "CC", "dst_zone": "DER", "status": "violación", "reason": "No hay conducto de CC a DER para el puerto 502", "conduit": null}, {"id": "F14", "src": "nube-fabricante", "dst": "inversor", "protocol": "Modbus/TCP", "port": 502, "note": "Puerto del inversor expuesto a Internet.", "src_zone": "PROV", "dst_zone": "DER", "status": "violación", "reason": "No hay conducto de PROV a DER para el puerto 502", "conduit": null}, {"id": "F15", "src": "pc-admin", "dst": "scada", "protocol": "RDP", "port": 3389, "note": "Acceso directo desde TI sin servidor de salto.", "src_zone": "IT", "dst_zone": "CC", "status": "violación", "reason": "No hay conducto de IT a CC para el puerto 3389", "conduit": null}], "violations": 3}, "threats": [{"id": "A15", "asset": "inversor", "title": "Modificación no autorizada del límite de potencia", "description": "Un equipo no autorizado en la red escribe el registro de límite de potencia del inversor y reduce la generación.", "technique": {"id": "T0855", "name": "Unauthorized Command Message"}, "likelihood": 4, "impact": 4, "impact_type": "Problemas de calidad de energía y pérdida de generación", "controls": ["Autenticación mutua", "Autorización por roles", "Detección de comandos y valores anómalos"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S1", "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 16, "level": "Crítico"}, {"id": "A21", "asset": "inversor", "title": "Credenciales débiles o de fábrica en inversores", "description": "El inversor conserva la contraseña de fábrica o una contraseña compartida.", "technique": {"id": "T0812", "name": "Default Credentials"}, "likelihood": 4, "impact": 4, "impact_type": "Acceso no autorizado al equipo", "controls": ["Gestión segura de configuraciones", "Autorización por roles", "Control de acceso remoto"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 16, "level": "Crítico"}, {"id": "A24", "asset": "proveedor-remoto", "title": "Cuentas remotas persistentes de proveedores", "description": "El proveedor conserva un acceso permanente que puede ser usado por un tercero.", "technique": {"id": "T0822", "name": "External Remote Services"}, "likelihood": 4, "impact": 4, "impact_type": "Accesos no autorizados", "controls": ["Cuentas temporales y trazables", "Revisión de accesos", "Segmentación de proveedores"], "refs": ["NIST CSF 2.0", "IEC 62443", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "suministro", "source": "Tabla 1 del trabajo", "risk": 16, "level": "Crítico"}, {"id": "A05", "asset": "rtu", "title": "Comandos no autorizados a equipos de subestación", "description": "Un equipo o usuario sin autorización envía órdenes de maniobra a la RTU.", "technique": {"id": "T0855", "name": "Unauthorized Command Message"}, "likelihood": 3, "impact": 5, "impact_type": "Pérdida de control", "controls": ["Segmentación por zonas y conductos", "Listas de comunicaciones permitidas", "Registros y monitoreo"], "refs": ["IEC 62443", "IEC 62351", "IEC 61850", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 15, "level": "Crítico"}, {"id": "A09", "asset": "scada", "title": "Compromiso de credenciales del SCADA", "description": "Un atacante ingresa al SCADA con credenciales legítimas y opera la red.", "technique": {"id": "T0859", "name": "Valid Accounts"}, "likelihood": 3, "impact": 5, "impact_type": "Pérdida de control y de supervisión", "controls": ["Autenticación multifactor para acceso remoto", "Gestión de accesos privilegiados", "Monitoreo de sesiones"], "refs": ["NIST SP 800-82 Rev. 3", "NIST CSF 2.0", "IEC 62443"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 15, "level": "Crítico"}, {"id": "A16", "asset": "inversor", "title": "Desconexión remota del inversor", "description": "Un atacante envía la orden de desconexión. Aplicada a muchos inversores a la vez puede afectar la tensión del alimentador.", "technique": {"id": "T0816", "name": "Device Restart/Shutdown"}, "likelihood": 3, "impact": 5, "impact_type": "Desconexiones", "controls": ["Control de acceso remoto", "Detección de comandos y valores anómalos", "Registros auditables"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S5", "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 15, "level": "Crítico"}, {"id": "A07", "asset": "rtu", "title": "Explotación de vulnerabilidades en equipos de campo", "description": "Se aprovecha una vulnerabilidad conocida de un equipo heredado sin parches.", "technique": {"id": "T0866", "name": "Exploitation of Remote Services"}, "likelihood": 3, "impact": 4, "impact_type": "Indisponibilidad o pérdida de control", "controls": ["Segmentación por zonas y conductos", "Mínimo privilegio", "Listas de comunicaciones permitidas"], "refs": ["IEC 62443", "IEC 62351", "IEC 61850", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 12, "level": "Alto"}, {"id": "A08", "asset": "rtu", "title": "Acceso físico o remoto indebido a la subestación", "description": "Se usa un puerto local o un acceso remoto mal protegido para conectarse a los equipos.", "technique": {"id": "T0886", "name": "Remote Services"}, "likelihood": 3, "impact": 4, "impact_type": "Pérdida de control", "controls": ["Protección de acceso local y remoto", "Cuentas nominales", "Registros y monitoreo"], "refs": ["IEC 62443", "IEC 62351", "IEC 61850", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 12, "level": "Alto"}, {"id": "A10", "asset": "scada", "title": "Malware o ransomware en el centro de control", "description": "Un programa malicioso cifra o inutiliza servidores y estaciones del centro de control.", "technique": {"id": "T0826", "name": "Loss of Availability"}, "likelihood": 3, "impact": 4, "impact_type": "Interrupción de la supervisión", "controls": ["Segmentación IT/OT", "Protección antimalware o EDR compatible con OT", "Copias de respaldo probadas"], "refs": ["NIST SP 800-82 Rev. 3", "NIST CSF 2.0", "IEC 62443"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 12, "level": "Alto"}, {"id": "A14", "asset": "servidor-salto", "title": "Configuraciones inseguras en el acceso remoto", "description": "El servicio de acceso remoto queda con reglas amplias o sin doble factor.", "technique": {"id": "T0886", "name": "Remote Services"}, "likelihood": 3, "impact": 4, "impact_type": "Acceso inicial a la red OT", "controls": ["Protección de configuraciones", "Control de flujos permitidos", "Registro de eventos"], "refs": ["IEC 62351", "NISTIR 7628 Rev. 1", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 12, "level": "Alto"}, {"id": "A18", "asset": "inversor", "title": "Consigna anómala desde el maestro autorizado", "description": "El maestro autorizado, bajo control de un atacante, envía una consigna fuera de los límites de ingeniería.", "technique": {"id": "T0836", "name": "Modify Parameter"}, "likelihood": 3, "impact": 4, "impact_type": "Comportamiento no previsto del inversor", "controls": ["Detección de comandos y valores anómalos", "Gestión segura de configuraciones"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S3", "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 12, "level": "Alto"}, {"id": "A26", "title": "Inyección de datos falsos sin conocimiento del modelo", "description": "Un intermediario altera la potencia que el inversor reporta, con un valor físicamente imposible para su límite y su estado.", "likelihood": 3, "impact": 4, "impact_type": "Decisiones de operación erróneas", "controls": ["Detección de comandos y valores anómalos", "Autenticación mutua", "Registros auditables"], "lab_scenario": "S7", "asset": "inversor", "technique": {"id": "T0856", "name": "Spoof Reporting Message"}, "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "family": "fdia", "source": "Sección 4.1 del trabajo, extendida a DER por el prototipo (la Tabla 1 nombra la inyección de datos falsos en AMI)", "risk": 12, "level": "Alto"}, {"id": "A06", "asset": "rele", "title": "Modificación de configuraciones de protección", "description": "Se cambian ajustes de relés o IED sin pasar por el control de cambios.", "technique": {"id": "T0836", "name": "Modify Parameter"}, "likelihood": 2, "impact": 5, "impact_type": "Alteración de parámetros operativos", "controls": ["Control de cambios", "Validación de configuraciones", "Cuentas nominales"], "refs": ["IEC 62443", "IEC 62351", "IEC 61850", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 10, "level": "Alto"}, {"id": "A11", "asset": "estacion-ingenieria", "title": "Abuso de herramientas administrativas de ingeniería", "description": "Desde la estación de ingeniería se carga una configuración alterada a equipos de campo.", "technique": {"id": "T0843", "name": "Program Download"}, "likelihood": 2, "impact": 5, "impact_type": "Pérdida de integridad de configuraciones", "controls": ["Endurecimiento", "Gestión de accesos privilegiados", "Registros centralizados"], "refs": ["NIST SP 800-82 Rev. 3", "NIST CSF 2.0", "IEC 62443"], "lab_scenario": null, "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 10, "level": "Alto"}, {"id": "A22", "asset": "inversor", "title": "Firmware vulnerable en inversores", "description": "El inversor opera con un firmware con vulnerabilidades conocidas.", "technique": {"id": "T0857", "name": "System Firmware"}, "likelihood": 2, "impact": 5, "impact_type": "Pérdida de control del equipo", "controls": ["Gestión segura de configuraciones y firmware", "Inventario y clasificación de activos"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": null, "family": "suministro", "source": "Tabla 1 del trabajo", "risk": 10, "level": "Alto"}, {"id": "A23", "asset": "nube-fabricante", "title": "Software o firmware comprometido en origen", "description": "Una actualización legítima del fabricante llega con código alterado.", "technique": {"id": "T0862", "name": "Supply Chain Compromise"}, "likelihood": 2, "impact": 5, "impact_type": "Propagación de compromisos", "controls": ["Validación de actualizaciones", "Inventario de componentes y SBOM cuando aplique", "Requisitos de seguridad contractuales"], "refs": ["NIST CSF 2.0", "IEC 62443", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "suministro", "source": "Tabla 1 del trabajo", "risk": 10, "level": "Alto"}, {"id": "A01", "asset": "medidor", "title": "Manipulación de lecturas e inyección de datos falsos", "description": "Se alteran las lecturas que el medidor reporta, de modo que la cabecera recibe valores que no corresponden al consumo o a la inyección real.", "technique": {"id": "T0856", "name": "Spoof Reporting Message"}, "likelihood": 3, "impact": 3, "impact_type": "Errores de facturación y pérdida de observabilidad", "controls": ["Identidad y autenticación de dispositivos", "Cifrado y autenticación de comunicaciones", "Monitoreo de eventos y tráfico"], "refs": ["NISTIR 7628 Rev. 1", "NIST CSF 2.0", "IEC 62351"], "lab_scenario": null, "family": "fdia", "source": "Tabla 1 del trabajo", "risk": 9, "level": "Medio"}, {"id": "A04", "asset": "cabecera", "title": "Exposición de información de consumo", "description": "Se accede sin autorización a datos de consumo que revelan hábitos y ocupación de los usuarios.", "technique": {"id": "T0882", "name": "Theft of Operational Information"}, "likelihood": 3, "impact": 3, "impact_type": "Pérdida de confidencialidad y privacidad", "controls": ["Minimización y control de acceso a datos", "Cifrado y autenticación de comunicaciones"], "refs": ["NISTIR 7628 Rev. 1", "NIST CSF 2.0", "IEC 62351"], "lab_scenario": null, "family": "privacidad", "source": "Tabla 1 del trabajo", "risk": 9, "level": "Medio"}, {"id": "A12", "asset": "gateway", "title": "Denegación de servicio sobre enlaces y pasarelas", "description": "Se satura o interrumpe un enlace o una pasarela y se pierde el control remoto.", "technique": {"id": "T0814", "name": "Denial of Service"}, "likelihood": 3, "impact": 3, "impact_type": "Pérdida de telemetría y de control remoto", "controls": ["Redundancia de enlaces", "Control de flujos permitidos", "Monitoreo pasivo de red"], "refs": ["IEC 62351", "NISTIR 7628 Rev. 1", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "dos", "source": "Tabla 1 del trabajo", "risk": 9, "level": "Medio"}, {"id": "A19", "asset": "inversor", "title": "Pérdida de telemetría por inundación de solicitudes", "description": "Una ráfaga de solicitudes satura la interfaz de comunicación del inversor.", "technique": {"id": "T0814", "name": "Denial of Service"}, "likelihood": 3, "impact": 3, "impact_type": "Pérdida de visibilidad", "controls": ["Control de acceso remoto", "Detección de comandos y valores anómalos"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S4", "family": "dos", "source": "Tabla 1 del trabajo", "risk": 9, "level": "Medio"}, {"id": "A02", "asset": "medidor", "title": "Firmware comprometido en medidores", "description": "Se instala en el medidor un firmware modificado a través del canal de actualización.", "technique": {"id": "T0857", "name": "System Firmware"}, "likelihood": 2, "impact": 4, "impact_type": "Pérdida de integridad del equipo", "controls": ["Firma y validación de actualizaciones", "Gestión de claves"], "refs": ["NISTIR 7628 Rev. 1", "NIST CSF 2.0", "IEC 62351"], "lab_scenario": null, "family": "suministro", "source": "Tabla 1 del trabajo", "risk": 8, "level": "Medio"}, {"id": "A13", "asset": "gateway", "title": "Intercepción y manipulación de tráfico", "description": "Un atacante se interpone en un enlace y altera órdenes o mediciones en tránsito.", "technique": {"id": "T0830", "name": "Adversary-in-the-Middle"}, "likelihood": 2, "impact": 4, "impact_type": "Pérdida de integridad", "controls": ["Autenticación mutua", "Cifrado cuando sea aplicable", "Detección de anomalías"], "refs": ["IEC 62351", "NISTIR 7628 Rev. 1", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "fdia", "source": "Tabla 1 del trabajo", "risk": 8, "level": "Medio"}, {"id": "A17", "asset": "inversor", "title": "Suplantación del maestro y reconocimiento", "description": "Un equipo desconocido se comporta como maestro, pide la identificación del inversor y recorre sus registros.", "technique": {"id": "T0846", "name": "Remote System Discovery"}, "likelihood": 4, "impact": 2, "impact_type": "Exposición de información", "controls": ["Inventario y clasificación de activos", "Autenticación mutua", "Detección de comandos y valores anómalos"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S2", "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 8, "level": "Medio"}, {"id": "A20", "asset": "inversor", "title": "Consigna válida enviada con la identidad del maestro", "description": "El atacante opera desde el maestro comprometido y envía una consigna dentro de rango. En la red es indistinguible de una operación legítima.", "technique": {"id": "T0831", "name": "Manipulation of Control"}, "likelihood": 2, "impact": 4, "impact_type": "Pérdida de generación", "controls": ["Autorización por roles", "Registros auditables", "Defensa en profundidad"], "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "lab_scenario": "S6", "family": "acceso", "source": "Tabla 1 del trabajo", "risk": 8, "level": "Medio"}, {"id": "A25", "asset": "nube-fabricante", "title": "Dependencia de servicios externos", "description": "La caída o el compromiso del portal del fabricante afecta a todos los inversores de una marca.", "technique": {"id": "T0826", "name": "Loss of Availability"}, "likelihood": 2, "impact": 4, "impact_type": "Indisponibilidad", "controls": ["Planes de continuidad y recuperación", "Evaluación de proveedores"], "refs": ["NIST CSF 2.0", "IEC 62443", "NIST SP 800-82 Rev. 3"], "lab_scenario": null, "family": "suministro", "source": "Tabla 1 del trabajo", "risk": 8, "level": "Medio"}, {"id": "A27", "title": "Inyección de datos falsos coherente con el modelo", "description": "Un intermediario que conoce los límites del inversor altera la potencia reportada con un valor falso pero físicamente posible, que elude la verificación de coherencia.", "likelihood": 2, "impact": 4, "impact_type": "Decisiones de operación erróneas", "controls": ["Autenticación mutua", "Contraste con otra fuente de medición", "Defensa en profundidad"], "lab_scenario": "S8", "asset": "inversor", "technique": {"id": "T0856", "name": "Spoof Reporting Message"}, "refs": ["IEC 62443", "NIST SP 800-82 Rev. 3", "IEEE 2030.7"], "family": "fdia", "source": "Sección 4.1 del trabajo, extendida a DER por el prototipo (la Tabla 1 nombra la inyección de datos falsos en AMI)", "risk": 8, "level": "Medio"}, {"id": "A03", "asset": "concentrador", "title": "Indisponibilidad de las comunicaciones de medición", "description": "Se degrada o interrumpe el enlace entre medidores, concentradores y cabecera.", "technique": {"id": "T0814", "name": "Denial of Service"}, "likelihood": 3, "impact": 2, "impact_type": "Pérdida de observabilidad", "controls": ["Monitoreo de eventos y tráfico", "Cifrado y autenticación de comunicaciones"], "refs": ["NISTIR 7628 Rev. 1", "NIST CSF 2.0", "IEC 62351"], "lab_scenario": null, "family": "dos", "source": "Tabla 1 del trabajo", "risk": 6, "level": "Medio"}], "levels": [{"name": "Crítico", "min": 15}, {"name": "Alto", "min": 10}, {"name": "Medio", "min": 5}, {"name": "Bajo", "min": 1}], "families": [{"id": "fdia", "name": "Inyección de datos falsos", "section": "4.1"}, {"id": "dos", "name": "Denegación de servicio e indisponibilidad", "section": "4.2"}, {"id": "acceso", "name": "Credenciales, malware y acceso remoto", "section": "4.3"}, {"id": "suministro", "name": "Cadena de suministro", "section": "4.4"}, {"id": "privacidad", "name": "Privacidad y gobierno de datos", "section": "4.5"}], "lab": {"summary": {"generated": "2026-11-13T01:48:06+00:00", "attacks": 8, "detected": 6, "baseline_packets": 796, "baseline_requests": 398, "baseline_seconds": 20.0, "baseline_alerts": 0, "rules": {"R1": {"name": "Maestro Modbus no autorizado", "technique": "T0846", "severity": "media"}, "R2": {"name": "Escritura desde un maestro no autorizado", "technique": "T0855", "severity": "alta"}, "R3": {"name": "Consigna fuera de los límites de ingeniería", "technique": "T0836", "severity": "alta"}, "R4": {"name": "Orden de desconexión del inversor", "technique": "T0816", "severity": "alta"}, "R5": {"name": "Solicitud de identificación o diagnóstico", "technique": "T0888", "severity": "media"}, "R6": {"name": "Barrido de registros", "technique": "T0846", "severity": "media"}, "R7": {"name": "Tasa de solicitudes anómala", "technique": "T0814", "severity": "alta"}, "R8": {"name": "Telemetría físicamente incoherente", "technique": "T0856", "severity": "alta"}}, "policy": {"comment": "Política del sensor pasivo, derivada de la arquitectura de referencia.", "modbus_port": 502, "authorized_masters": ["10.10.15.30"], "registers": {"10": {"name": "Límite de potencia (%)", "min": 20, "max": 100}, "11": {"name": "Conexión a red (1 = conectado)", "min": 0, "max": 1}}, "disconnect": {"register": 11, "value": 0}, "max_requests_per_second": 50, "max_illegal_address_errors": 3, "coherence": {"comment": "La potencia reportada no puede superar la nominal por el límite, ni ser mayor que cero con el inversor desconectado.", "power_register": 0, "limit_register": 10, "connection_register": 11, "rated_w": 5000, "tolerance": 0.05, "consecutive_readings": 2}}}, "scenarios": [{"id": "S0", "name": "Operación normal", "description": "La pasarela consulta al inversor cada 100 ms. Mide los falsos positivos.", "threat": null, "expected_rules": [], "fired_rules": [], "missing_rules": [], "outcome": "sin alertas", "stealth": false, "packets": 796, "requests": 398, "masters": ["10.10.15.30"], "inverter_state": {"limite_pct": 100, "conectado": true, "potencia_w": 4000}, "alerts": [], "pcap": "results/pcap/S0.pcap"}, {"id": "S1", "name": "Escritura no autorizada del límite de potencia", "description": "Un equipo desconocido baja el límite de potencia al 30 %.", "threat": "A15", "expected_rules": ["R2"], "fired_rules": ["R1", "R2"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 42, "requests": 21, "masters": ["10.10.15.30", "10.10.40.99"], "inverter_state": {"limite_pct": 30, "conectado": true, "potencia_w": 1200}, "alerts": [{"rule": "R1", "name": "Maestro Modbus no autorizado", "technique": "T0846", "severity": "media", "time": 1794534475.371, "source": "10.10.40.99", "detail": "10.10.40.99 no figura en la lista de maestros autorizados"}, {"rule": "R2", "name": "Escritura desde un maestro no autorizado", "technique": "T0855", "severity": "alta", "time": 1794534475.371, "source": "10.10.40.99", "detail": "Escritura con código de función 6 desde 10.10.40.99"}], "pcap": "results/pcap/S1.pcap"}, {"id": "S2", "name": "Reconocimiento", "description": "Un equipo desconocido pide la identificación y recorre registros.", "threat": "A17", "expected_rules": ["R1", "R5", "R6"], "fired_rules": ["R1", "R5", "R6"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 54, "requests": 27, "masters": ["10.10.15.30", "10.10.40.99"], "inverter_state": {"limite_pct": 100, "conectado": true, "potencia_w": 4000}, "alerts": [{"rule": "R1", "name": "Maestro Modbus no autorizado", "technique": "T0846", "severity": "media", "time": 1794534476.43, "source": "10.10.40.99", "detail": "10.10.40.99 no figura en la lista de maestros autorizados"}, {"rule": "R5", "name": "Solicitud de identificación o diagnóstico", "technique": "T0888", "severity": "media", "time": 1794534476.43, "source": "10.10.40.99", "detail": "Código de función 43, ausente en la operación normal"}, {"rule": "R6", "name": "Barrido de registros", "technique": "T0846", "severity": "media", "time": 1794534476.432, "source": "10.10.40.99", "detail": "3 lecturas a direcciones inexistentes"}], "pcap": "results/pcap/S2.pcap"}, {"id": "S3", "name": "Consigna fuera de rango", "description": "El maestro autorizado envía un límite del 5 %, por debajo del mínimo de ingeniería.", "threat": "A18", "expected_rules": ["R3"], "fired_rules": ["R3"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 42, "requests": 21, "masters": ["10.10.15.30"], "inverter_state": {"limite_pct": 5, "conectado": true, "potencia_w": 200}, "alerts": [{"rule": "R3", "name": "Consigna fuera de los límites de ingeniería", "technique": "T0836", "severity": "alta", "time": 1794534477.492, "source": "10.10.15.30", "detail": "Límite de potencia (%): valor 5, fuera de 20 a 100"}], "pcap": "results/pcap/S3.pcap"}, {"id": "S4", "name": "Inundación de solicitudes", "description": "Un equipo desconocido envía 300 solicitudes seguidas.", "threat": "A19", "expected_rules": ["R7"], "fired_rules": ["R1", "R7"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 644, "requests": 322, "masters": ["10.10.15.30", "10.10.40.99"], "inverter_state": {"limite_pct": 100, "conectado": true, "potencia_w": 4000}, "alerts": [{"rule": "R1", "name": "Maestro Modbus no autorizado", "technique": "T0846", "severity": "media", "time": 1794534478.553, "source": "10.10.40.99", "detail": "10.10.40.99 no figura en la lista de maestros autorizados"}, {"rule": "R7", "name": "Tasa de solicitudes anómala", "technique": "T0814", "severity": "alta", "time": 1794534478.558, "source": "10.10.40.99", "detail": "Más de 50 solicitudes por segundo"}], "pcap": "results/pcap/S4.pcap"}, {"id": "S5", "name": "Desconexión del inversor", "description": "Un equipo desconocido envía la orden de desconexión.", "threat": "A16", "expected_rules": ["R4"], "fired_rules": ["R1", "R2", "R4"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 42, "requests": 21, "masters": ["10.10.15.30", "10.10.40.99"], "inverter_state": {"limite_pct": 100, "conectado": false, "potencia_w": 0}, "alerts": [{"rule": "R1", "name": "Maestro Modbus no autorizado", "technique": "T0846", "severity": "media", "time": 1794534479.718, "source": "10.10.40.99", "detail": "10.10.40.99 no figura en la lista de maestros autorizados"}, {"rule": "R2", "name": "Escritura desde un maestro no autorizado", "technique": "T0855", "severity": "alta", "time": 1794534479.718, "source": "10.10.40.99", "detail": "Escritura con código de función 6 desde 10.10.40.99"}, {"rule": "R4", "name": "Orden de desconexión del inversor", "technique": "T0816", "severity": "alta", "time": 1794534479.718, "source": "10.10.40.99", "detail": "Escritura que desconecta el inversor de la red"}], "pcap": "results/pcap/S5.pcap"}, {"id": "S6", "name": "Consigna válida con identidad del maestro", "description": "Desde el maestro autorizado se envía un límite del 60 %, dentro de rango. En la red es igual a una operación legítima.", "threat": "A20", "expected_rules": [], "fired_rules": [], "missing_rules": [], "outcome": "no detectado", "stealth": true, "packets": 42, "requests": 21, "masters": ["10.10.15.30"], "inverter_state": {"limite_pct": 60, "conectado": true, "potencia_w": 2400}, "alerts": [], "pcap": "results/pcap/S6.pcap"}, {"id": "S7", "name": "Datos falsos físicamente imposibles", "description": "Un intermediario hace que el inversor reporte 6500 W, más que su potencia nominal de 5000 W.", "threat": "A26", "expected_rules": ["R8"], "fired_rules": ["R8"], "missing_rules": [], "outcome": "detectado", "stealth": false, "packets": 100, "requests": 50, "masters": ["10.10.15.30"], "inverter_state": {"limite_pct": 100, "conectado": true, "potencia_w": 4000}, "alerts": [{"rule": "R8", "name": "Telemetría físicamente incoherente", "technique": "T0856", "severity": "alta", "time": 1794534481.941, "source": "10.10.40.21", "detail": "Reporta 6500 W, por encima del máximo posible de 5250 W con límite 100 %"}], "pcap": "results/pcap/S7.pcap"}, {"id": "S8", "name": "Datos falsos coherentes con el modelo", "description": "Un intermediario hace que el inversor reporte 2000 W en lugar de los 4000 W reales. El valor es físicamente posible.", "threat": "A27", "expected_rules": [], "fired_rules": [], "missing_rules": [], "outcome": "no detectado", "stealth": true, "packets": 100, "requests": 50, "masters": ["10.10.15.30"], "inverter_state": {"limite_pct": 100, "conectado": true, "potencia_w": 4000}, "alerts": [], "pcap": "results/pcap/S8.pcap"}]}, "experts": {"experts": 7, "kendall_w": 0.46, "items": [{"id": "A01", "median": 3.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A02", "median": 3.0, "q1": 2.5, "q3": 3.0, "iqr": 0.5, "consensus": true}, {"id": "A03", "median": 2.0, "q1": 1.5, "q3": 3.0, "iqr": 1.5, "consensus": false}, {"id": "A04", "median": 2.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A05", "median": 3.0, "q1": 3.0, "q3": 4.0, "iqr": 1.0, "consensus": true}, {"id": "A06", "median": 2.0, "q1": 1.5, "q3": 2.0, "iqr": 0.5, "consensus": true}, {"id": "A07", "median": 3.0, "q1": 3.0, "q3": 4.0, "iqr": 1.0, "consensus": true}, {"id": "A08", "median": 4.0, "q1": 3.0, "q3": 4.0, "iqr": 1.0, "consensus": true}, {"id": "A09", "median": 4.0, "q1": 3.5, "q3": 5.0, "iqr": 1.5, "consensus": false}, {"id": "A10", "median": 2.0, "q1": 1.5, "q3": 2.5, "iqr": 1.0, "consensus": true}, {"id": "A11", "median": 3.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A12", "median": 2.0, "q1": 1.5, "q3": 2.5, "iqr": 1.0, "consensus": true}, {"id": "A13", "median": 2.0, "q1": 1.0, "q3": 3.0, "iqr": 2.0, "consensus": false}, {"id": "A14", "median": 3.0, "q1": 2.0, "q3": 3.5, "iqr": 1.5, "consensus": false}, {"id": "A15", "median": 4.0, "q1": 4.0, "q3": 5.0, "iqr": 1.0, "consensus": true}, {"id": "A16", "median": 4.0, "q1": 4.0, "q3": 4.5, "iqr": 0.5, "consensus": true}, {"id": "A17", "median": 2.0, "q1": 1.5, "q3": 2.5, "iqr": 1.0, "consensus": true}, {"id": "A18", "median": 3.0, "q1": 3.0, "q3": 3.5, "iqr": 0.5, "consensus": true}, {"id": "A19", "median": 2.0, "q1": 1.5, "q3": 3.0, "iqr": 1.5, "consensus": false}, {"id": "A20", "median": 2.0, "q1": 1.5, "q3": 2.0, "iqr": 0.5, "consensus": true}, {"id": "A21", "median": 4.0, "q1": 4.0, "q3": 4.0, "iqr": 0.0, "consensus": true}, {"id": "A22", "median": 2.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A23", "median": 3.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A24", "median": 4.0, "q1": 3.0, "q3": 4.0, "iqr": 1.0, "consensus": true}, {"id": "A25", "median": 2.0, "q1": 2.0, "q3": 3.0, "iqr": 1.0, "consensus": true}, {"id": "A26", "median": 3.0, "q1": 2.5, "q3": 4.0, "iqr": 1.5, "consensus": false}, {"id": "A27", "median": 2.0, "q1": 1.5, "q3": 3.0, "iqr": 1.5, "consensus": false}], "spearman_vs_model": 0.786}, "maturity": {"meta": {"note": "Indicadores orientativos inspirados en C2M2 y NIST CSF 2.0. No reemplazan una evaluación formal.", "levels": ["No implementado", "Inicial, sin procedimiento", "Definido y aplicado", "Gestionado y medido"]}, "domains": [{"id": "inventario", "name": "Inventario y arquitectura", "questions": [{"id": "q1", "text": "Existe un inventario actualizado de equipos OT (RTU, relés, inversores, medidores).", "advice": "Armar un inventario con modelo, firmware y dirección de red de cada equipo."}, {"id": "q2", "text": "La red está documentada con zonas y conductos.", "advice": "Dibujar la arquitectura real y compararla con la de referencia."}, {"id": "q3", "text": "Se conocen los flujos de comunicación entre TI, OT y terceros.", "advice": "Capturar tráfico de forma pasiva y listar quién habla con quién."}]}, {"id": "acceso", "name": "Control de acceso", "questions": [{"id": "q4", "text": "El acceso remoto de proveedores usa doble factor y se habilita bajo pedido.", "advice": "Centralizar el acceso remoto en un servidor de salto con doble factor."}, {"id": "q5", "text": "Cada operador tiene una cuenta individual en el SCADA.", "advice": "Eliminar cuentas compartidas y registrar las sesiones."}, {"id": "q6", "text": "Se cambiaron las contraseñas de fábrica en equipos de campo.", "advice": "Relevar equipos con credenciales por defecto y cambiarlas."}]}, {"id": "segmentacion", "name": "Segmentación de red", "questions": [{"id": "q7", "text": "TI y OT están separadas por un cortafuegos con una DMZ.", "advice": "Instalar una DMZ como único punto de intercambio entre TI y OT."}, {"id": "q8", "text": "Los DER no son alcanzables desde Internet.", "advice": "Permitir solo conexiones salientes desde los equipos DER."}, {"id": "q9", "text": "Las reglas del cortafuegos se revisan periódicamente.", "advice": "Auditar las reglas contra la matriz de conductos al menos una vez al año."}]}, {"id": "monitoreo", "name": "Monitoreo y detección", "questions": [{"id": "q10", "text": "Se monitorea el tráfico OT de forma pasiva.", "advice": "Instalar un sensor en un puerto espejo de la red de subestación."}, {"id": "q11", "text": "Hay alertas ante escrituras o comandos no autorizados.", "advice": "Definir la lista de maestros autorizados y alertar ante cualquier otro."}, {"id": "q12", "text": "Los registros de eventos se conservan y se revisan.", "advice": "Centralizar registros y asignar un responsable de revisión."}]}, {"id": "respuesta", "name": "Respuesta y recuperación", "questions": [{"id": "q13", "text": "Existe un plan de respuesta a incidentes que incluye OT.", "advice": "Escribir un plan con roles, contactos y pasos de aislamiento."}, {"id": "q14", "text": "Hay respaldos probados de configuraciones de RTU, relés y SCADA.", "advice": "Respaldar configuraciones y probar la restauración."}, {"id": "q15", "text": "Se puede operar en modo manual ante la pérdida del SCADA.", "advice": "Documentar y practicar la operación manual."}]}, {"id": "gestion", "name": "Gestión y proveedores", "questions": [{"id": "q16", "text": "Hay un responsable designado de ciberseguridad OT.", "advice": "Designar un responsable con respaldo de la dirección."}, {"id": "q17", "text": "El personal recibe capacitación en ciberseguridad.", "advice": "Capacitar a operadores y técnicos al menos una vez al año."}, {"id": "q18", "text": "Los contratos con proveedores incluyen requisitos de ciberseguridad.", "advice": "Agregar requisitos de acceso, parches y notificación de incidentes."}]}]}};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const VIEWS = [
+  ["resumen", "", "Resumen"], ["arquitectura", "2", "Arquitectura"], ["amenazas", "3", "Amenazas"],
+  ["laboratorio", "4", "Laboratorio"], ["en-vivo", "4", "En vivo"], ["expertos", "4", "Expertos"], ["madurez", "5", "Madurez"]];
+const LEVEL_CLASS = { "Crítico": "critical", "Alto": "serious", "Medio": "warning", "Bajo": "good" };
+const OUTCOME_CLASS = { "detectado": "good", "sin alertas": "good", "no detectado": "critical", "falso positivo": "critical" };
+const pill = (cls, text) => `<span class="pill ${cls}"><i></i>${esc(text)}</span>`;
+const assetById = Object.fromEntries(DATA.architecture.assets.map(a => [a.id, a]));
+const zoneById = Object.fromEntries(DATA.architecture.zones.map(z => [z.id, z]));
+const scenarioById = Object.fromEntries(DATA.lab.scenarios.map(s => [s.id, s]));
+const threatById = Object.fromEntries(DATA.threats.map(t => [t.id, t]));
+const familyById = Object.fromEntries(DATA.families.map(f => [f.id, f]));
+const levelOf = score => DATA.levels.slice().sort((a, b) => b.min - a.min).find(l => score >= l.min).name;
+const labStatus = t => t.lab_scenario ? scenarioById[t.lab_scenario].outcome : "no evaluado";
+
+/* Navegación */
+$("#nav").innerHTML = VIEWS.map(([id, n, name]) =>
+  `<a href="#${id}" data-v="${id}">${n ? `<span class="n">E${n}</span>` : ""}${name}</a>`).join("");
+function route() {
+  const id = VIEWS.some(v => v[0] === location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
+  document.querySelectorAll("section.view").forEach(s => s.classList.toggle("on", s.id === "v-" + id));
+  document.querySelectorAll("#nav a").forEach(a => a.dataset.v === id ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+addEventListener("hashchange", route);
+
+/* Tooltip */
+const tip = $("#tip");
+document.addEventListener("mousemove", e => {
+  const el = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (!el) { tip.style.display = "none"; return; }
+  tip.textContent = el.dataset.tip; tip.style.display = "block";
+  const w = tip.offsetWidth, x = Math.min(e.clientX + 14, innerWidth - w - 8);
+  tip.style.left = x + "px"; tip.style.top = (e.clientY + 16) + "px";
+});
+
+/* ---------- Resumen ---------- */
+(function () {
+  const s = DATA.lab.summary, v = DATA.validation;
+  const crit = DATA.threats.filter(t => t.level === "Crítico").length;
+  $("#v-resumen").innerHTML = `
+  <p class="note">La arquitectura es un escenario hipotético, las ponderaciones de riesgo son provisionales y las respuestas de expertos son sintéticas. Los resultados del laboratorio provienen de una ejecución real sobre equipos emulados.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${v.violations} <small>de ${v.flows.length}</small></div><div class="k">flujos que violan la segmentación</div></div>
+    <div class="tile"><div class="v">${crit} <small>de ${DATA.threats.length}</small></div><div class="k">amenazas de nivel crítico</div></div>
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados por el sensor pasivo</div></div>
+    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en ${s.baseline_requests} solicitudes de operación normal</div></div>
+  </div>
+  <div class="grid stages">
+    <a class="card stage" href="#arquitectura"><span class="tag">Etapa 2</span><h3>Arquitectura de referencia</h3><p>Zonas, activos y conductos descritos como datos. Un validador marca los flujos que no pasan por un conducto declarado.</p></a>
+    <a class="card stage" href="#amenazas"><span class="tag">Etapa 3</span><h3>Modelo de amenazas</h3><p>Amenazas por zona con sus controles y marcos, ponderadas por probabilidad e impacto y asociadas a MITRE ATT&amp;CK for ICS.</p></a>
+    <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. Un sensor pasivo analiza la captura y genera alertas.</p></a>
+    <a class="card stage" href="#en-vivo"><span class="tag">Etapa 4</span><h3>Laboratorio en vivo</h3><p>El mismo laboratorio en tiempo real: se lanza cada ataque y la alerta aparece al instante. Requiere el servidor local.</p></a>
+    <a class="card stage" href="#expertos"><span class="tag">Etapa 4</span><h3>Consulta a expertos</h3><p>Acuerdo entre expertos medido con el coeficiente W de Kendall y comparado con el modelo.</p></a>
+    <a class="card stage" href="#madurez"><span class="tag">Etapa 5</span><h3>Indicadores de madurez</h3><p>Autoevaluación de 18 preguntas para distribuidoras y cooperativas, con puntaje y recomendaciones.</p></a>
+  </div>`;
+})();
+
+/* ---------- Arquitectura ---------- */
+(function () {
+  const A = DATA.architecture, V = DATA.validation;
+  const W = 800, BH = 96, LX = 150, BW = 140, BX = 44;
+  const pos = {};
+  A.zones.forEach((z, zi) => {
+    const list = A.assets.filter(a => a.zone === z.id);
+    list.forEach((a, i) => { pos[a.id] = { x: LX + (W - LX) * (i + 1) / (list.length + 1), y: zi * BH + BH / 2, zi }; });
+  });
+  const H = A.zones.length * BH;
+  function path(f) {
+    const s = pos[f.src], d = pos[f.dst];
+    if (s.zi === d.zi) {
+      const dir = d.x > s.x ? 1 : -1;
+      return `M${s.x + dir * BW / 2},${s.y} L${d.x - dir * BW / 2},${d.y}`;
+    }
+    const dir = d.zi > s.zi ? 1 : -1;
+    const y1 = s.y + dir * BX / 2, y2 = d.y - dir * BX / 2, my = (y1 + y2) / 2;
+    return `M${s.x},${y1} C${s.x},${my} ${d.x},${my} ${d.x},${y2}`;
+  }
+  const bands = A.zones.map((z, i) => `
+    <rect x="0" y="${i * BH}" width="${W}" height="${BH - 4}" rx="6" fill="var(--accent-soft)" opacity="${i % 2 ? .55 : .9}"/>
+    <text x="12" y="${i * BH + 26}" font-size="14" font-weight="600">${esc(z.short || z.name)}</text>
+    <text x="12" y="${i * BH + 44}" font-size="12" class="muted">${esc(z.purdue)}</text>`).join("");
+  const flows = V.flows.map(f => `<path id="fl-${f.id}" class="flow ${f.status === "violación" ? "bad" : ""}" d="${path(f)}" marker-end="url(#${f.status === "violación" ? "arB" : "arA"})" data-tip="${esc(f.id + ": " + assetById[f.src].name + " → " + assetById[f.dst].name + " (" + f.protocol + ", puerto " + f.port + "). " + f.reason)}"/>`);
+  const boxes = A.assets.map(a => { const p = pos[a.id]; return `
+    <g class="asset" id="as-${a.id}" data-id="${a.id}" tabindex="0" role="button" aria-label="${esc(a.name)}">
+      <rect x="${p.x - BW / 2}" y="${p.y - BX / 2}" width="${BW}" height="${BX}" rx="6"/>
+      <text x="${p.x}" y="${p.y - 1}" text-anchor="middle" font-size="13" font-weight="500">${esc(a.name)}</text>
+      <text x="${p.x}" y="${p.y + 14}" text-anchor="middle" font-size="11" class="muted" font-family="var(--font-mono)">${a.ip}</text>
+    </g>`; }).join("");
+  $("#v-arquitectura").innerHTML = `
+  <h2>Arquitectura de referencia</h2>
+  <p class="lead">${A.zones.length} zonas unidas por ${A.conduits.length} conductos. De ${V.flows.length} flujos declarados, ${V.violations} cruzan entre zonas sin un conducto que los permita. Es un escenario hipotético, no un despliegue real. Seleccioná un activo para ver sus amenazas.</p>
+  <div class="grid two">
+    <div class="card">
+      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:640px" role="img" aria-label="Diagrama de zonas, activos y flujos">
+        <defs>
+          <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+          <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--critical)"/></marker>
+        </defs>
+        ${bands}<g>${flows.join("")}</g>${boxes}
+      </svg></div>
+      <div class="legend"><span><i class="sw"></i>Flujo permitido por un conducto</span><span><i class="sw bad"></i>Flujo que viola la segmentación</span></div>
+    </div>
+    <div class="card" id="asset-detail"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Flujos validados</h3><div class="scroll"><table>
+    <thead><tr><th>Flujo</th><th>Origen</th><th>Destino</th><th>Protocolo</th><th class="num">Puerto</th><th>Estado</th><th>Motivo</th></tr></thead>
+    <tbody>${V.flows.map(f => `<tr class="pick" data-flow="${f.id}"><td class="mono">${f.id}</td><td>${esc(assetById[f.src].name)}</td><td>${esc(assetById[f.dst].name)}</td><td>${esc(f.protocol)}</td><td class="num">${f.port}</td><td>${pill(f.status === "violación" ? "critical" : "good", f.status === "violación" ? "Violación" : "Permitido")}</td><td>${esc(f.reason)}${f.note ? `. ${esc(f.note)}` : ""}</td></tr>`).join("")}</tbody>
+  </table></div></div>`;
+  function show(id) {
+    const a = assetById[id], z = zoneById[a.zone];
+    document.querySelectorAll(".asset").forEach(g => g.classList.toggle("sel", g.dataset.id === id));
+    const ths = DATA.threats.filter(t => t.asset === id);
+    const fl = V.flows.filter(f => f.src === id || f.dst === id);
+    $("#asset-detail").innerHTML = `<h3>${esc(a.name)}</h3>
+      <dl class="kv"><dt>Tipo</dt><dd>${esc(a.type)}</dd><dt>Zona</dt><dd>${esc(z.name)} (${esc(z.purdue)})</dd>${z.frameworks.length ? `<dt>Marcos</dt><dd>${z.frameworks.map(esc).join("; ")}</dd>` : ""}<dt>Dirección</dt><dd class="mono">${a.ip}</dd></dl>
+      <p style="color:var(--muted);font-size:14px">${esc(a.description)}</p>
+      <h3>Amenazas (${ths.length})</h3>
+      ${ths.length ? `<ul class="plain">${ths.map(t => `<li><span class="mono">${t.id}</span> ${esc(t.title)} ${pill(LEVEL_CLASS[t.level], t.level)}</li>`).join("")}</ul>` : `<p style="color:var(--muted);font-size:14px">Sin amenazas modeladas para este activo.</p>`}
+      <h3 style="margin-top:14px">Flujos (${fl.length})</h3>
+      <ul class="plain">${fl.map(f => `<li><span class="mono">${f.id}</span> ${esc(assetById[f.src].name)} → ${esc(assetById[f.dst].name)}${f.status === "violación" ? " " + pill("critical", "Violación") : ""}</li>`).join("")}</ul>`;
+  }
+  document.querySelectorAll(".asset").forEach(g => {
+    g.addEventListener("click", () => show(g.dataset.id));
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(g.dataset.id); } });
+  });
+  document.querySelectorAll("tr[data-flow]").forEach(tr => {
+    const el = document.getElementById("fl-" + tr.dataset.flow);
+    tr.addEventListener("mouseenter", () => el.classList.add("hi"));
+    tr.addEventListener("mouseleave", () => el.classList.remove("hi"));
+  });
+  show("inversor");
+})();
+
+/* ---------- Amenazas ---------- */
+(function () {
+  const T = DATA.threats;
+  const root = $("#v-amenazas");
+  const assets = [...new Set(T.map(t => t.asset))];
+  const zones = DATA.architecture.zones.filter(z => T.some(t => assetById[t.asset].zone === z.id));
+  root.innerHTML = `
+  <h2>Modelo de amenazas</h2>
+  <p class="lead">${T.length} amenazas en ${zones.length} zonas, con sus controles y marcos de referencia. La probabilidad y el impacto son valores provisionales, en escala de 1 a 5. Cada amenaza indica si se evaluó en el laboratorio.</p>
+  <div class="filters">
+    <label class="f" for="f-zone">Zona<select id="f-zone"><option value="">Todas</option>${zones.map(z => `<option value="${z.id}">${esc(z.short)}</option>`).join("")}</select></label>
+    <label class="f" for="f-family">Tipo de amenaza<select id="f-family"><option value="">Todos</option>${DATA.families.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join("")}</select></label>
+    <label class="f" for="f-asset">Activo<select id="f-asset"><option value="">Todos</option>${assets.map(a => `<option value="${a}">${esc(assetById[a].name)}</option>`).join("")}</select></label>
+    <label class="f" for="f-level">Nivel de riesgo<select id="f-level"><option value="">Todos</option>${DATA.levels.map(l => `<option>${l.name}</option>`).join("")}</select></label>
+  </div>
+  <div class="grid two">
+    <div class="card">
+      <h3>Matriz de riesgo</h3>
+      <div style="display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px">
+        <div style="writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:12px;color:var(--muted)">Impacto</div>
+        <div><div class="matrix" id="matrix"></div><div class="axis-title">Probabilidad</div></div>
+      </div>
+      <div class="legend">${DATA.levels.map(l => `<span><i class="sq" style="background:var(--${LEVEL_CLASS[l.name]})"></i>${l.name} (desde ${l.min})</span>`).join("")}</div>
+    </div>
+    <div class="card" id="threat-detail"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Tipos de amenaza por zona</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 10px;max-width:80ch">Cantidad de amenazas de cada tipo en cada zona. Seleccioná una celda para filtrar.</p>
+    <div class="scroll"><table id="cross"></table></div></div>
+  <div class="card" style="margin-top:14px"><div class="scroll"><table>
+    <thead><tr><th>Id</th><th>Amenaza</th><th>Tipo</th><th>Zona</th><th>Activo</th><th>Técnica</th><th class="num">P</th><th class="num">I</th><th class="num">Riesgo</th><th>Nivel</th><th>Laboratorio</th></tr></thead>
+    <tbody id="threat-rows"></tbody></table></div></div>`;
+  let sel = T[0].id;
+  function drawCross(fz, ff) {
+    const count = (f, z) => T.filter(t => t.family === f && assetById[t.asset].zone === z).length;
+    const max = Math.max(...DATA.families.flatMap(f => zones.map(z => count(f.id, z.id))));
+    $("#cross").innerHTML = `<thead><tr><th>Tipo de amenaza</th>${zones.map(z => `<th class="num">${esc(z.short)}</th>`).join("")}<th class="num">Total</th></tr></thead><tbody>` +
+      DATA.families.map(f => `<tr><td>${esc(f.name)}</td>${zones.map(z => {
+        const n = count(f.id, z.id), on = fz === z.id && ff === f.id;
+        return `<td class="num" style="padding:3px">${n ? `<button type="button" class="xc" data-z="${z.id}" data-f="${f.id}" aria-pressed="${on}" style="background:color-mix(in srgb, var(--mark) ${Math.round(12 + 38 * n / max)}%, var(--surface))" data-tip="${esc(f.name)} en ${esc(z.short)}: ${n} ${n === 1 ? "amenaza" : "amenazas"}">${n}</button>` : `<span style="color:var(--muted);display:block;padding:4px 10px">·</span>`}</td>`;
+      }).join("")}<td class="num">${T.filter(t => t.family === f.id).length}</td></tr>`).join("") +
+      `<tr><td style="color:var(--muted)">Total</td>${zones.map(z => `<td class="num">${T.filter(t => assetById[t.asset].zone === z.id).length}</td>`).join("")}<td class="num">${T.length}</td></tr></tbody>`;
+  }
+  function draw() {
+    const fz = $("#f-zone").value, ff = $("#f-family").value, fa = $("#f-asset").value, fl = $("#f-level").value;
+    const match = t => (!fz || assetById[t.asset].zone === fz) && (!ff || t.family === ff) && (!fa || t.asset === fa) && (!fl || t.level === fl);
+    drawCross(fz, ff);
+    let m = "";
+    for (let imp = 5; imp >= 1; imp--) {
+      m += `<div class="ax">${imp}</div>`;
+      for (let p = 1; p <= 5; p++) {
+        const lv = levelOf(p * imp);
+        const here = T.filter(t => t.likelihood === p && t.impact === imp);
+        m += `<div class="cell" style="background:color-mix(in srgb, var(--${LEVEL_CLASS[lv]}) 30%, var(--surface))" data-tip="Probabilidad ${p}, impacto ${imp}: riesgo ${p * imp} (${lv})">${here.map(t => `<button class="chip ${t.id === sel ? "sel" : ""} ${match(t) ? "" : "dim"}" data-t="${t.id}" data-tip="${esc(t.title)}">${t.id}</button>`).join("")}</div>`;
+      }
+    }
+    m += `<div></div>` + [1, 2, 3, 4, 5].map(p => `<div class="ax">${p}</div>`).join("");
+    $("#matrix").innerHTML = m;
+    $("#threat-rows").innerHTML = T.filter(match).map(t => {
+      const st = labStatus(t);
+      return `<tr class="pick ${t.id === sel ? "sel" : ""}" data-t="${t.id}"><td class="mono">${t.id}</td><td>${esc(t.title)}</td><td>${esc(familyById[t.family].name)}</td><td>${esc(zoneById[assetById[t.asset].zone].short)}</td><td>${esc(assetById[t.asset].name)}</td><td class="mono">${t.technique.id}</td><td class="num">${t.likelihood}</td><td class="num">${t.impact}</td><td class="num">${t.risk}</td><td>${pill(LEVEL_CLASS[t.level], t.level)}</td><td>${pill(OUTCOME_CLASS[st] || "", st[0].toUpperCase() + st.slice(1))}</td></tr>`;
+    }).join("") || `<tr><td colspan="11" style="color:var(--muted)">Ninguna amenaza coincide con los filtros.</td></tr>`;
+    const t = threatById[sel], st = labStatus(t), sc = t.lab_scenario ? scenarioById[t.lab_scenario] : null;
+    $("#threat-detail").innerHTML = `<h3><span class="mono">${t.id}</span> ${esc(t.title)}</h3>
+      <p style="margin-top:0;font-size:14px">${esc(t.description)}</p>
+      <dl class="kv">
+        <dt>Tipo</dt><dd>${esc(familyById[t.family].name)}</dd>
+        <dt>Zona</dt><dd>${esc(zoneById[assetById[t.asset].zone].name)}</dd>
+        <dt>Activo</dt><dd>${esc(assetById[t.asset].name)}</dd>
+        <dt>Técnica</dt><dd><span class="mono">${t.technique.id}</span> ${esc(t.technique.name)}</dd>
+        <dt>Riesgo</dt><dd>${t.likelihood} × ${t.impact} = ${t.risk} ${pill(LEVEL_CLASS[t.level], t.level)}</dd>
+        <dt>Impacto</dt><dd>${esc(t.impact_type)}</dd>
+        <dt>Marcos</dt><dd>${t.refs.map(esc).join("; ")}</dd>
+        <dt>Laboratorio</dt><dd>${sc ? `Escenario <span class="mono">${sc.id}</span> ` : ""}${pill(OUTCOME_CLASS[st] || "", st[0].toUpperCase() + st.slice(1))}${sc && sc.fired_rules.length ? `<br>Reglas: <span class="mono">${sc.fired_rules.join(", ")}</span>` : ""}</dd>
+      </dl>
+      <h3 style="margin-top:14px">Controles</h3><ul class="plain">${t.controls.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`;
+  }
+  root.addEventListener("click", e => {
+    const x = e.target.closest(".xc");
+    if (x) {
+      const on = x.getAttribute("aria-pressed") === "true";
+      $("#f-zone").value = on ? "" : x.dataset.z; $("#f-family").value = on ? "" : x.dataset.f; draw(); return;
+    }
+    const el = e.target.closest("[data-t]"); if (el) { sel = el.dataset.t; draw(); }
+  });
+  root.addEventListener("change", draw);
+  draw();
+})();
+
+/* ---------- Laboratorio ---------- */
+(function () {
+  const L = DATA.lab, s = L.summary;
+  const missed = L.scenarios.filter(x => x.outcome === "no detectado");
+  $("#v-laboratorio").innerHTML = `
+  <h2>Evaluación en laboratorio</h2>
+  <p class="lead">Una pasarela de protocolos emulada consulta por Modbus/TCP a un inversor emulado. Un switch emulado copia todo el tráfico a un archivo PCAP y el sensor lo analiza sin enviar ningún paquete. Ejecución del ${esc(s.generated.slice(0, 10))}. Para lanzar los ataques y ver las alertas al instante, abrí la pestaña <a href="#en-vivo">En vivo</a>.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados</div></div>
+    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en operación normal (${s.baseline_requests} solicitudes en ${s.baseline_seconds} s)</div></div>
+    <div class="tile"><div class="v">${Object.keys(s.rules).length}</div><div class="k">reglas de detección activas</div></div>
+  </div>
+  ${missed.length ? `<p class="note">${missed.map(x => `El escenario ${x.id} no se detectó: ${x.description}`).join(" ")} Son los límites del monitoreo pasivo de red y el motivo para sumar otras capas de defensa.</p>` : ""}
+  <div class="card"><div class="scroll"><table>
+    <thead><tr><th>Escenario</th><th>Descripción</th><th>Amenaza</th><th>Resultado</th><th>Reglas disparadas</th><th>Estado final del inversor</th><th class="num">Paquetes</th></tr></thead>
+    <tbody>${L.scenarios.map(x => `<tr><td><span class="mono">${x.id}</span><br>${esc(x.name)}</td><td>${esc(x.description)}</td><td class="mono">${x.threat || "—"}</td><td>${pill(OUTCOME_CLASS[x.outcome], x.outcome[0].toUpperCase() + x.outcome.slice(1))}</td><td class="mono">${x.fired_rules.join(", ") || "—"}</td><td>Límite ${x.inverter_state.limite_pct} %, ${x.inverter_state.conectado ? "conectado" : "desconectado"}, ${x.inverter_state.potencia_w} W</td><td class="num">${x.packets}</td></tr>`).join("")}</tbody>
+  </table></div></div>
+  <div class="grid two" style="margin-top:14px">
+    <div class="card"><h3>Alertas generadas</h3><div class="scroll"><table>
+      <thead><tr><th>Escenario</th><th>Regla</th><th>Origen</th><th>Detalle</th></tr></thead>
+      <tbody>${L.scenarios.flatMap(x => x.alerts.map(a => `<tr><td class="mono">${x.id}</td><td><span class="mono">${a.rule}</span> ${esc(a.name)}</td><td class="mono">${a.source}</td><td>${esc(a.detail)}</td></tr>`)).join("")}</tbody>
+    </table></div></div>
+    <div class="card"><h3>Reglas del sensor</h3><table>
+      <thead><tr><th>Regla</th><th>Técnica</th><th>Severidad</th></tr></thead>
+      <tbody>${Object.entries(s.rules).map(([id, r]) => `<tr><td><span class="mono">${id}</span> ${esc(r.name)}</td><td class="mono">${r.technique}</td><td>${pill(r.severity === "alta" ? "serious" : "warning", r.severity[0].toUpperCase() + r.severity.slice(1))}</td></tr>`).join("")}</tbody>
+    </table>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:0">Maestro autorizado: <span class="mono">${s.policy.authorized_masters.join(", ")}</span>. Límite de potencia admitido: ${s.policy.registers["10"].min} a ${s.policy.registers["10"].max} %.</p></div>
+  </div>`;
+})();
+
+/* ---------- En vivo ---------- */
+(function () {
+  const root = $("#v-en-vivo");
+  const offline = `
+  <h2>Laboratorio en vivo</h2>
+  <p class="lead">En esta pestaña se lanza cada ataque contra el inversor emulado y se ven las alertas del sensor en el momento en que ocurren.</p>
+  <div class="card" style="max-width:720px"><h3>El laboratorio no está corriendo</h3>
+    <p style="margin:0;color:var(--muted)">El panel en vivo necesita el servidor local del proyecto. Desde la carpeta del repositorio, ejecutá:</p>
+    <pre class="cmd">python -m lab.live</pre>
+    <p style="margin:0;color:var(--muted)">Se abre este mismo sitio en <span class="mono">http://127.0.0.1:8765</span> con el panel activo. Los resultados de la última ejecución grabada están en la pestaña <a href="#laboratorio">Laboratorio</a>.</p></div>`;
+  root.innerHTML = offline;
+  let meta = null;
+  if (location.protocol.startsWith("http")) fetch("meta").then(r => r.ok ? r.json() : null).then(m => { if (m && m.attacks) { meta = m; start(); } }).catch(() => {});
+
+  function start() {
+    root.innerHTML = `
+    <div class="livehead"><div><h2>Laboratorio en vivo</h2>
+      <p class="lead" style="margin-bottom:14px">La pasarela de protocolos consulta al inversor emulado cada 100 ms. El sensor recibe una copia de cada paquete y alerta mientras el ataque ocurre.</p></div>
+      <span class="pill" id="lv-conn" style="margin-bottom:14px"><i></i>Conectando</span></div>
+    <div class="grid tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="tile"><div class="v" id="lv-pot">— <small>W</small></div><div class="k">potencia real del inversor</div></div>
+      <div class="tile"><div class="v" id="lv-rep">— <small>W</small></div><div class="k">potencia reportada al centro de control</div></div>
+      <div class="tile"><div class="v" id="lv-lim">— <small>%</small></div><div class="k">límite de potencia</div></div>
+      <div class="tile"><div class="v" id="lv-con" style="font-size:20px;line-height:1.5">—</div><div class="k">conexión a la red</div></div>
+      <div class="tile"><div class="v" id="lv-rate">—</div><div class="k">solicitudes Modbus por segundo</div></div>
+      <div class="tile"><div class="v" id="lv-al">0</div><div class="k">alertas desde que abrió el panel</div></div>
+    </div>
+    <div class="grid livecols">
+      <div class="card"><h3>Lanzar un ataque contra el inversor emulado</h3>
+        <div id="lv-attacks">${meta.attacks.map(a => `
+          <div class="attack"><div><b><span class="mono">${a.id}</span> ${esc(a.name)}</b><div class="d">${esc(a.description)}</div></div>
+          <button type="button" class="primary" data-id="${a.id}" id="lv-btn-${a.id}">Lanzar</button>
+          <div class="r" id="lv-res-${a.id}"></div></div>`).join("")}</div>
+        <div style="margin-top:12px"><button id="lv-reset" type="button">Restablecer el inversor</button></div>
+        <p style="color:var(--muted);font-size:13px;margin:10px 0 0">Maestro autorizado: <span class="mono">${meta.ips.gateway}</span>. Inversor: <span class="mono">${meta.ips.inversor}</span>. Equipo desconocido: <span class="mono">${meta.ips.atacante}</span>. Todo corre en esta computadora.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="chart-head"><h3>Potencia del inversor, últimos 60 segundos</h3><span id="lv-c-pot"></span></div>
+          <div class="legend" style="margin:0 0 6px"><span><i class="lsw"></i>Real</span><span><i class="lsw dash"></i>Reportada al centro de control</span></div>
+          <svg id="lv-chart-pot" viewBox="0 0 600 130" width="100%" role="img" aria-label="Potencia real y reportada en el tiempo"></svg>
+          <div class="chart-head" style="margin-top:10px"><h3>Solicitudes Modbus por segundo</h3><span id="lv-c-rate"></span></div>
+          <svg id="lv-chart-rate" viewBox="0 0 600 130" width="100%" role="img" aria-label="Solicitudes por segundo en el tiempo"></svg>
+        </div>
+        <div class="card"><h3>Eventos en vivo</h3>
+          <div class="feed" id="lv-feed"><div style="color:var(--muted);font-size:14px;padding:8px 0" id="lv-empty">Sin alertas. La operación normal no dispara ninguna regla.</div></div></div>
+      </div>
+    </div>`;
+    const hist = []; let alerts = 0, busy = false;
+    const clock = t => new Date(t * 1000).toLocaleTimeString("es-AR", { hour12: false });
+
+    function chart(id, key, labelId, unit, minTop, key2) {
+      const W = 600, H = 130, L = 44, R = 8, T = 8, B = 20;
+      const now = hist.length ? hist[hist.length - 1].t : 0;
+      const pts = hist.filter(p => now - p.t <= 60);
+      const max = Math.max(minTop, ...pts.map(p => p[key]), ...(key2 ? pts.map(p => p[key2]) : [])) * 1.1;
+      const x = t => L + (W - L - R) * (1 - (now - t) / 60);
+      const y = v => T + (H - T - B) * (1 - v / max);
+      const path = k => pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
+      const last = pts[pts.length - 1], top = Math.round(max / 1.1);
+      $(id).innerHTML = `
+        <line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>
+        <line x1="${L}" x2="${W - R}" y1="${y(top)}" y2="${y(top)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+        <text x="${L - 6}" y="${y(0) + 4}" text-anchor="end" font-size="11" class="muted">0</text>
+        <text x="${L - 6}" y="${y(top) + 4}" text-anchor="end" font-size="11" class="muted">${top}</text>
+        <text x="${L}" y="${H - 4}" font-size="11" class="muted">hace 60 s</text><text x="${W - R}" y="${H - 4}" text-anchor="end" font-size="11" class="muted">ahora</text>
+        ${pts.length > 1 ? `<path d="${path(key)} L${x(last.t).toFixed(1)},${y(0)} L${x(pts[0].t).toFixed(1)},${y(0)} Z" fill="var(--mark)" opacity=".12"/>
+        <path d="${path(key)}" fill="none" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round"/>` : ""}
+        ${key2 && pts.length > 1 ? `<path d="${path(key2)}" fill="none" stroke="var(--mark2)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 5"/>` : ""}
+        ${last ? `<circle cx="${x(last.t)}" cy="${y(last[key])}" r="4" fill="var(--mark)" stroke="var(--surface)" stroke-width="2"/>` : ""}
+        ${last && key2 && last[key2] !== last[key] ? `<circle cx="${x(last.t)}" cy="${y(last[key2])}" r="4" fill="var(--mark2)" stroke="var(--surface)" stroke-width="2"/>` : ""}`;
+      if (last) $(labelId).textContent = key2 ? `real: ${last[key]} ${unit} · reportada: ${last[key2]} ${unit}` : `ahora: ${last[key]} ${unit}`;
+    }
+    function addEvent(html, cls, time) {
+      const empty = $("#lv-empty"); if (empty) empty.remove();
+      const el = document.createElement("div");
+      el.className = `ev ${cls} new`;
+      el.innerHTML = `<div class="t">${clock(time)}</div><div>${html}</div>`;
+      $("#lv-feed").prepend(el);
+      while ($("#lv-feed").children.length > 80) $("#lv-feed").lastChild.remove();
+    }
+    $("#lv-attacks").addEventListener("click", e => {
+      const b = e.target.closest("button[data-id]"); if (!b || busy) return;
+      busy = true; document.querySelectorAll("#lv-attacks button").forEach(x => x.disabled = true);
+      $("#lv-res-" + b.dataset.id).textContent = "Ejecutando…";
+      fetch("attack/" + b.dataset.id, { method: "POST" }).then(r => r.json()).then(res => {
+        $("#lv-res-" + res.id).innerHTML = res.outcome === "detectado"
+          ? `${pill("good", "Detectado")} reglas <span class="mono">${res.fired_rules.join(", ")}</span>`
+          : `${pill("critical", "No detectado")} ninguna regla se disparó`;
+      }).catch(() => { $("#lv-res-" + b.dataset.id).textContent = "No se pudo ejecutar. Verificá que el laboratorio siga corriendo."; })
+        .finally(() => { busy = false; document.querySelectorAll("#lv-attacks button").forEach(x => x.disabled = false); });
+    });
+    $("#lv-reset").addEventListener("click", () => fetch("reset", { method: "POST" }));
+
+    const es = new EventSource("events");
+    es.onopen = () => { $("#lv-conn").className = "pill good"; $("#lv-conn").innerHTML = "<i></i>Sensor en vivo"; };
+    es.onerror = () => { $("#lv-conn").className = "pill critical"; $("#lv-conn").innerHTML = "<i></i>Sin conexión con el laboratorio"; };
+    es.addEventListener("state", e => {
+      const s = JSON.parse(e.data);
+      const rep = s.potencia_reportada_w == null ? s.potencia_w : s.potencia_reportada_w;
+      $("#lv-pot").innerHTML = `${s.potencia_w} <small>W</small>`;
+      $("#lv-rep").innerHTML = `${rep} <small>W</small>`;
+      $("#lv-lim").innerHTML = `${s.limite_pct} <small>%</small>`;
+      $("#lv-con").innerHTML = pill(s.conectado ? "good" : "critical", s.conectado ? "Conectado" : "Desconectado");
+      $("#lv-rate").textContent = s.solicitudes_por_segundo;
+      hist.push({ t: s.time, pot: s.potencia_w, rep, rate: s.solicitudes_por_segundo });
+      while (hist.length > 200) hist.shift();
+      chart("#lv-chart-pot", "pot", "#lv-c-pot", "W", 4000, "rep");
+      chart("#lv-chart-rate", "rate", "#lv-c-rate", "por segundo", 50);
+    });
+    es.addEventListener("alert", e => {
+      const a = JSON.parse(e.data); alerts++; $("#lv-al").textContent = alerts;
+      addEvent(`${pill(a.severity === "alta" ? "serious" : "warning", "Alerta " + a.severity)} <span class="mono">${a.rule}</span> <b>${esc(a.name)}</b> <span class="mono">${a.technique}</span><br>${esc(a.detail)} · origen <span class="mono">${a.source}</span>`, "alert", a.time);
+    });
+    es.addEventListener("attack", e => { const a = JSON.parse(e.data); addEvent(`Ataque lanzado: <span class="mono">${a.id}</span> ${esc(a.name)}`, "info", a.time); });
+    es.addEventListener("reset", e => addEvent("Inversor restablecido: límite 100 % y conectado", "info", JSON.parse(e.data).time));
+  }
+})();
+
+/* ---------- Expertos ---------- */
+(function () {
+  const E = DATA.experts;
+  const items = E.items.slice().sort((a, b) => b.median - a.median || a.id.localeCompare(b.id));
+  const W = 640, RH = 26, LX = 300, PW = W - LX - 20, H = items.length * RH + 30;
+  const x = v => LX + (v - 1) / 4 * PW;
+  const rows = items.map((it, i) => {
+    const y = i * RH + RH / 2, t = threatById[it.id];
+    const title = t.title.length > 38 ? t.title.slice(0, 37) + "…" : t.title;
+    return `<g data-tip="${esc(it.id + " " + t.title + ". Mediana " + it.median + ", rango intercuartil " + it.q1 + " a " + it.q3 + ".")}">
+      <rect x="0" y="${i * RH}" width="${W}" height="${RH}" fill="transparent"/>
+      <text x="0" y="${y + 4}" font-size="12" font-family="var(--font-mono)">${it.id}</text>
+      <text x="36" y="${y + 4}" font-size="12.5">${esc(title)}</text>
+      <line x1="${x(it.q1)}" x2="${x(it.q3)}" y1="${y}" y2="${y}" stroke="var(--mark)" stroke-width="6" stroke-linecap="round" opacity=".35"/>
+      <circle cx="${x(it.median)}" cy="${y}" r="5.5" fill="var(--mark)" stroke="var(--surface)" stroke-width="2"/>
+    </g>`;
+  }).join("");
+  const grid = [1, 2, 3, 4, 5].map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="0" y2="${items.length * RH}" stroke="var(--line)"/><text x="${x(v)}" y="${items.length * RH + 18}" font-size="12" text-anchor="middle" class="muted">${v}</text>`).join("");
+  const agree = E.items.filter(i => i.consensus).length;
+  $("#v-expertos").innerHTML = `
+  <h2>Consulta a expertos</h2>
+  <p class="note">Las respuestas de esta vista son sintéticas, generadas para mostrar el análisis. Se reemplazan cargando el CSV real de la consulta.</p>
+  <p class="lead">Cada experto califica la relevancia de cada amenaza de 1 a 5. El coeficiente W de Kendall mide el acuerdo general: 0 es ninguno y 1 es total.</p>
+  <div class="grid tiles">
+    <div class="tile"><div class="v">${E.experts}</div><div class="k">expertos consultados</div></div>
+    <div class="tile"><div class="v">${E.kendall_w.toFixed(2)}</div><div class="k">W de Kendall (acuerdo general)</div></div>
+    <div class="tile"><div class="v">${agree} <small>de ${E.items.length}</small></div><div class="k">amenazas con consenso (rango intercuartil de 1 o menos)</div></div>
+    <div class="tile"><div class="v">${E.spearman_vs_model.toFixed(2)}</div><div class="k">correlación de Spearman con el riesgo del modelo</div></div>
+  </div>
+  <div class="card"><h3>Relevancia según los expertos, por amenaza</h3>
+    <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:560px;max-width:820px" role="img" aria-label="Mediana y rango intercuartil de relevancia por amenaza">${grid}${rows}</svg></div>
+    <div class="legend"><span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="var(--mark)"/></svg>Mediana</span><span><svg width="26" height="14"><line x1="3" x2="23" y1="7" y2="7" stroke="var(--mark)" stroke-width="6" stroke-linecap="round" opacity=".35"/></svg>Rango intercuartil</span><span>Escala: 1 poco relevante, 5 muy relevante</span></div>
+  </div>`;
+})();
+
+/* ---------- Madurez ---------- */
+(function () {
+  const M = DATA.maturity, KEY = "der-ot-madurez-v1";
+  const qs = M.domains.flatMap(d => d.questions.map(q => ({ ...q, domain: d.id })));
+  const EXAMPLE = { q1: 1, q2: 1, q3: 0, q4: 1, q5: 2, q6: 1, q7: 2, q8: 1, q9: 0, q10: 0, q11: 0, q12: 1, q13: 1, q14: 2, q15: 3, q16: 1, q17: 1, q18: 0 };
+  let ans = null, isExample = true;
+  try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved && typeof saved === "object") { ans = saved; isExample = false; } } catch (e) {}
+  if (!ans) ans = { ...EXAMPLE };
+  const root = $("#v-madurez");
+  root.innerHTML = `
+  <h2>Indicadores de madurez</h2>
+  <p class="lead">Autoevaluación para distribuidoras y cooperativas. Cada afirmación se califica de 0 a 3. ${esc(M.meta.note)}</p>
+  <p class="note" id="m-state"></p>
+  <div class="grid two">
+    <div class="card">
+      <div class="legend" style="margin:0 0 10px">${M.meta.levels.map((l, i) => `<span><b>${i}</b> ${esc(l)}</span>`).join("")}</div>
+      ${M.domains.map(d => `<h3 style="margin-top:16px">${esc(d.name)}</h3>${d.questions.map(q => `<div class="q"><div>${esc(q.text)}</div><div class="seg" role="radiogroup" aria-label="${esc(q.text)}">${[0, 1, 2, 3].map(v => `<label data-tip="${esc(M.meta.levels[v])}"><input type="radio" name="${q.id}" id="${q.id}-${v}" value="${v}"><span>${v}</span></label>`).join("")}</div></div>`).join("")}`).join("")}
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button id="m-clear" type="button">Borrar respuestas</button><button id="m-example" type="button">Cargar el ejemplo</button></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Resultado</h3><div class="tile" style="border:0;padding:0"><div class="v" id="m-score"></div><div class="k" id="m-count"></div></div><div id="m-radar" style="margin-top:8px"></div><div id="m-bars"></div></div>
+      <div class="card"><h3>Prioridades de mejora</h3><div id="m-advice"></div></div>
+    </div>
+  </div>`;
+  function draw() {
+    qs.forEach(q => [0, 1, 2, 3].forEach(v => { $(`#${q.id}-${v}`).checked = ans[q.id] === v; }));
+    $("#m-state").textContent = isExample ? "Se muestran respuestas de ejemplo de una cooperativa tipo. Al cambiar cualquier respuesta, la evaluación pasa a ser la tuya y se guarda solo en este navegador." : "Tus respuestas se guardan solo en este navegador.";
+    const dom = M.domains.map(d => {
+      const vals = d.questions.map(q => ans[q.id]).filter(v => v != null);
+      return { name: d.name, pct: vals.length ? vals.reduce((a, b) => a + b, 0) / (vals.length * 3) : 0, n: vals.length };
+    });
+    const all = qs.map(q => ans[q.id]).filter(v => v != null);
+    const total = all.length ? Math.round(all.reduce((a, b) => a + b, 0) / (all.length * 3) * 100) : 0;
+    $("#m-score").innerHTML = `${total} <small>%</small>`;
+    $("#m-count").textContent = `madurez general, con ${all.length} de ${qs.length} respuestas`;
+    const R = 88, C = 185, n = dom.length;
+    const pt = (i, r) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [C + r * Math.cos(a), 125 + r * Math.sin(a)]; };
+    const ring = f => dom.map((_, i) => pt(i, R * f).join(",")).join(" ");
+    $("#m-radar").innerHTML = `<svg viewBox="0 0 370 250" width="100%" style="max-width:400px;display:block;margin:auto" role="img" aria-label="Madurez por dominio">
+      ${[1 / 3, 2 / 3, 1].map(f => `<polygon points="${ring(f)}" fill="none" stroke="var(--line)"/>`).join("")}
+      ${dom.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${C}" y1="125" x2="${x}" y2="${y}" stroke="var(--line)"/>`; }).join("")}
+      <polygon points="${dom.map((d, i) => pt(i, R * d.pct).join(",")).join(" ")}" fill="var(--mark)" fill-opacity=".22" stroke="var(--mark)" stroke-width="2" stroke-linejoin="round"/>
+      ${dom.map((d, i) => { const [x, y] = pt(i, R * d.pct); return `<circle cx="${x}" cy="${y}" r="4" fill="var(--mark)" stroke="var(--surface)" stroke-width="2" data-tip="${esc(d.name)}: ${Math.round(d.pct * 100)} %"/>`; }).join("")}
+      ${dom.map((d, i) => { const [x, y] = pt(i, R + 14); const w = d.name.split(" "); return `<text x="${x}" y="${y + 4}" font-size="11" class="muted" text-anchor="${Math.abs(x - C) < 5 ? "middle" : x > C ? "start" : "end"}">${esc(w[0])}</text>`; }).join("")}
+    </svg>`;
+    $("#m-bars").innerHTML = dom.map(d => `<div class="drow"><span>${esc(d.name)}</span><div class="bar"><b style="width:${d.pct * 100}%"></b></div><span class="p">${Math.round(d.pct * 100)} %</span></div>`).join("");
+    const low = qs.filter(q => ans[q.id] != null && ans[q.id] <= 1).sort((a, b) => ans[a.id] - ans[b.id]).slice(0, 5);
+    $("#m-advice").innerHTML = low.length ? `<ol class="plain">${low.map(q => `<li style="margin-bottom:6px">${esc(q.advice)} <span style="color:var(--muted);font-size:13px">(nivel actual ${ans[q.id]})</span></li>`).join("")}</ol>`
+      : `<p style="color:var(--muted);font-size:14px;margin:0">${all.length ? "Ninguna respuesta está en nivel 0 o 1." : "Respondé el cuestionario para ver las prioridades."}</p>`;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(ans)); } catch (e) {} }
+  root.addEventListener("change", e => {
+    if (e.target.type !== "radio") return;
+    ans[e.target.name] = +e.target.value; isExample = false; save(); draw();
+  });
+  $("#m-clear").addEventListener("click", () => { ans = {}; isExample = false; save(); draw(); });
+  $("#m-example").addEventListener("click", () => { ans = { ...EXAMPLE }; isExample = true; try { localStorage.removeItem(KEY); } catch (e) {} draw(); });
+  draw();
+})();
+
+$("#foot").textContent = "Prototipo de investigación. El laboratorio valida la lógica de detección sobre equipos emulados y no reemplaza pruebas con equipos reales.";
+route();
+</script>
+</body>
+</html>

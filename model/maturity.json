@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "note": "Indicadores orientativos inspirados en C2M2 y NIST CSF 2.0. No reemplazan una evaluación formal.",
+    "levels": ["No implementado", "Inicial, sin procedimiento", "Definido y aplicado", "Gestionado y medido"]
+  },
+  "domains": [
+    {"id": "inventario", "name": "Inventario y arquitectura", "questions": [
+      {"id": "q1", "text": "Existe un inventario actualizado de equipos OT (RTU, relés, inversores, medidores).", "advice": "Armar un inventario con modelo, firmware y dirección de red de cada equipo."},
+      {"id": "q2", "text": "La red está documentada con zonas y conductos.", "advice": "Dibujar la arquitectura real y compararla con la de referencia."},
+      {"id": "q3", "text": "Se conocen los flujos de comunicación entre TI, OT y terceros.", "advice": "Capturar tráfico de forma pasiva y listar quién habla con quién."}
+    ]},
+    {"id": "acceso", "name": "Control de acceso", "questions": [
+      {"id": "q4", "text": "El acceso remoto de proveedores usa doble factor y se habilita bajo pedido.", "advice": "Centralizar el acceso remoto en un servidor de salto con doble factor."},
+      {"id": "q5", "text": "Cada operador tiene una cuenta individual en el SCADA.", "advice": "Eliminar cuentas compartidas y registrar las sesiones."},
+      {"id": "q6", "text": "Se cambiaron las contraseñas de fábrica en equipos de campo.", "advice": "Relevar equipos con credenciales por defecto y cambiarlas."}
+    ]},
+    {"id": "segmentacion", "name": "Segmentación de red", "questions": [
+      {"id": "q7", "text": "TI y OT están separadas por un cortafuegos con una DMZ.", "advice": "Instalar una DMZ como único punto de intercambio entre TI y OT."},
+      {"id": "q8", "text": "Los DER no son alcanzables desde Internet.", "advice": "Permitir solo conexiones salientes desde los equipos DER."},
+      {"id": "q9", "text": "Las reglas del cortafuegos se revisan periódicamente.", "advice": "Auditar las reglas contra la matriz de conductos al menos una vez al año."}
+    ]},
+    {"id": "monitoreo", "name": "Monitoreo y detección", "questions": [
+      {"id": "q10", "text": "Se monitorea el tráfico OT de forma pasiva.", "advice": "Instalar un sensor en un puerto espejo de la red de subestación."},
+      {"id": "q11", "text": "Hay alertas ante escrituras o comandos no autorizados.", "advice": "Definir la lista de maestros autorizados y alertar ante cualquier otro."},
+      {"id": "q12", "text": "Los registros de eventos se conservan y se revisan.", "advice": "Centralizar registros y asignar un responsable de revisión."}
+    ]},
+    {"id": "respuesta", "name": "Respuesta y recuperación", "questions": [
+      {"id": "q13", "text": "Existe un plan de respuesta a incidentes que incluye OT.", "advice": "Escribir un plan con roles, contactos y pasos de aislamiento."},
+      {"id": "q14", "text": "Hay respaldos probados de configuraciones de RTU, relés y SCADA.", "advice": "Respaldar configuraciones y probar la restauración."},
+      {"id": "q15", "text": "Se puede operar en modo manual ante la pérdida del SCADA.", "advice": "Documentar y practicar la operación manual."}
+    ]},
+    {"id": "gestion", "name": "Gestión y proveedores", "questions": [
+      {"id": "q16", "text": "Hay un responsable designado de ciberseguridad OT.", "advice": "Designar un responsable con respaldo de la dirección."},
+      {"id": "q17", "text": "El personal recibe capacitación en ciberseguridad.", "advice": "Capacitar a operadores y técnicos al menos una vez al año."},
+      {"id": "q18", "text": "Los contratos con proveedores incluyen requisitos de ciberseguridad.", "advice": "Agregar requisitos de acceso, parches y notificación de incidentes."}
+    ]}
+  ]
+}

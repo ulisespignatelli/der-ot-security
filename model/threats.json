@@ -1,0 +1,754 @@
+{
+  "meta": {
+    "source": "Tabla 1 del trabajo: Ciberseguridad en Redes Eléctricas Inteligentes con Generación Distribuida: Revisión Estructurada y Matriz de Controles para Entornos IT/OT (CONAIISI 2026)",
+    "scale": "Probabilidad e impacto de 1 (muy bajo) a 5 (muy alto). Riesgo = probabilidad x impacto.",
+    "levels": [
+      {
+        "name": "Crítico",
+        "min": 15
+      },
+      {
+        "name": "Alto",
+        "min": 10
+      },
+      {
+        "name": "Medio",
+        "min": 5
+      },
+      {
+        "name": "Bajo",
+        "min": 1
+      }
+    ],
+    "note": "Las amenazas, impactos, controles y marcos provienen de la matriz preliminar del trabajo. La matriz publicada no pondera probabilidad ni severidad: los valores y las técnicas de MITRE ATT&CK for ICS son una propuesta provisional de la Etapa 3, pendiente de validación.",
+    "families": [
+      {
+        "id": "fdia",
+        "name": "Inyección de datos falsos",
+        "section": "4.1"
+      },
+      {
+        "id": "dos",
+        "name": "Denegación de servicio e indisponibilidad",
+        "section": "4.2"
+      },
+      {
+        "id": "acceso",
+        "name": "Credenciales, malware y acceso remoto",
+        "section": "4.3"
+      },
+      {
+        "id": "suministro",
+        "name": "Cadena de suministro",
+        "section": "4.4"
+      },
+      {
+        "id": "privacidad",
+        "name": "Privacidad y gobierno de datos",
+        "section": "4.5"
+      }
+    ],
+    "families_note": "Las familias son los apartados de la Sección 4 del trabajo. La asignación de cada amenaza a una familia es una propuesta del prototipo."
+  },
+  "threats": [
+    {
+      "id": "A01",
+      "asset": "medidor",
+      "title": "Manipulación de lecturas e inyección de datos falsos",
+      "description": "Se alteran las lecturas que el medidor reporta, de modo que la cabecera recibe valores que no corresponden al consumo o a la inyección real.",
+      "technique": {
+        "id": "T0856",
+        "name": "Spoof Reporting Message"
+      },
+      "likelihood": 3,
+      "impact": 3,
+      "impact_type": "Errores de facturación y pérdida de observabilidad",
+      "controls": [
+        "Identidad y autenticación de dispositivos",
+        "Cifrado y autenticación de comunicaciones",
+        "Monitoreo de eventos y tráfico"
+      ],
+      "refs": [
+        "NISTIR 7628 Rev. 1",
+        "NIST CSF 2.0",
+        "IEC 62351"
+      ],
+      "lab_scenario": null,
+      "family": "fdia",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A02",
+      "asset": "medidor",
+      "title": "Firmware comprometido en medidores",
+      "description": "Se instala en el medidor un firmware modificado a través del canal de actualización.",
+      "technique": {
+        "id": "T0857",
+        "name": "System Firmware"
+      },
+      "likelihood": 2,
+      "impact": 4,
+      "impact_type": "Pérdida de integridad del equipo",
+      "controls": [
+        "Firma y validación de actualizaciones",
+        "Gestión de claves"
+      ],
+      "refs": [
+        "NISTIR 7628 Rev. 1",
+        "NIST CSF 2.0",
+        "IEC 62351"
+      ],
+      "lab_scenario": null,
+      "family": "suministro",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A03",
+      "asset": "concentrador",
+      "title": "Indisponibilidad de las comunicaciones de medición",
+      "description": "Se degrada o interrumpe el enlace entre medidores, concentradores y cabecera.",
+      "technique": {
+        "id": "T0814",
+        "name": "Denial of Service"
+      },
+      "likelihood": 3,
+      "impact": 2,
+      "impact_type": "Pérdida de observabilidad",
+      "controls": [
+        "Monitoreo de eventos y tráfico",
+        "Cifrado y autenticación de comunicaciones"
+      ],
+      "refs": [
+        "NISTIR 7628 Rev. 1",
+        "NIST CSF 2.0",
+        "IEC 62351"
+      ],
+      "lab_scenario": null,
+      "family": "dos",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A04",
+      "asset": "cabecera",
+      "title": "Exposición de información de consumo",
+      "description": "Se accede sin autorización a datos de consumo que revelan hábitos y ocupación de los usuarios.",
+      "technique": {
+        "id": "T0882",
+        "name": "Theft of Operational Information"
+      },
+      "likelihood": 3,
+      "impact": 3,
+      "impact_type": "Pérdida de confidencialidad y privacidad",
+      "controls": [
+        "Minimización y control de acceso a datos",
+        "Cifrado y autenticación de comunicaciones"
+      ],
+      "refs": [
+        "NISTIR 7628 Rev. 1",
+        "NIST CSF 2.0",
+        "IEC 62351"
+      ],
+      "lab_scenario": null,
+      "family": "privacidad",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A05",
+      "asset": "rtu",
+      "title": "Comandos no autorizados a equipos de subestación",
+      "description": "Un equipo o usuario sin autorización envía órdenes de maniobra a la RTU.",
+      "technique": {
+        "id": "T0855",
+        "name": "Unauthorized Command Message"
+      },
+      "likelihood": 3,
+      "impact": 5,
+      "impact_type": "Pérdida de control",
+      "controls": [
+        "Segmentación por zonas y conductos",
+        "Listas de comunicaciones permitidas",
+        "Registros y monitoreo"
+      ],
+      "refs": [
+        "IEC 62443",
+        "IEC 62351",
+        "IEC 61850",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A06",
+      "asset": "rele",
+      "title": "Modificación de configuraciones de protección",
+      "description": "Se cambian ajustes de relés o IED sin pasar por el control de cambios.",
+      "technique": {
+        "id": "T0836",
+        "name": "Modify Parameter"
+      },
+      "likelihood": 2,
+      "impact": 5,
+      "impact_type": "Alteración de parámetros operativos",
+      "controls": [
+        "Control de cambios",
+        "Validación de configuraciones",
+        "Cuentas nominales"
+      ],
+      "refs": [
+        "IEC 62443",
+        "IEC 62351",
+        "IEC 61850",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A07",
+      "asset": "rtu",
+      "title": "Explotación de vulnerabilidades en equipos de campo",
+      "description": "Se aprovecha una vulnerabilidad conocida de un equipo heredado sin parches.",
+      "technique": {
+        "id": "T0866",
+        "name": "Exploitation of Remote Services"
+      },
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Indisponibilidad o pérdida de control",
+      "controls": [
+        "Segmentación por zonas y conductos",
+        "Mínimo privilegio",
+        "Listas de comunicaciones permitidas"
+      ],
+      "refs": [
+        "IEC 62443",
+        "IEC 62351",
+        "IEC 61850",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A08",
+      "asset": "rtu",
+      "title": "Acceso físico o remoto indebido a la subestación",
+      "description": "Se usa un puerto local o un acceso remoto mal protegido para conectarse a los equipos.",
+      "technique": {
+        "id": "T0886",
+        "name": "Remote Services"
+      },
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Pérdida de control",
+      "controls": [
+        "Protección de acceso local y remoto",
+        "Cuentas nominales",
+        "Registros y monitoreo"
+      ],
+      "refs": [
+        "IEC 62443",
+        "IEC 62351",
+        "IEC 61850",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A09",
+      "asset": "scada",
+      "title": "Compromiso de credenciales del SCADA",
+      "description": "Un atacante ingresa al SCADA con credenciales legítimas y opera la red.",
+      "technique": {
+        "id": "T0859",
+        "name": "Valid Accounts"
+      },
+      "likelihood": 3,
+      "impact": 5,
+      "impact_type": "Pérdida de control y de supervisión",
+      "controls": [
+        "Autenticación multifactor para acceso remoto",
+        "Gestión de accesos privilegiados",
+        "Monitoreo de sesiones"
+      ],
+      "refs": [
+        "NIST SP 800-82 Rev. 3",
+        "NIST CSF 2.0",
+        "IEC 62443"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A10",
+      "asset": "scada",
+      "title": "Malware o ransomware en el centro de control",
+      "description": "Un programa malicioso cifra o inutiliza servidores y estaciones del centro de control.",
+      "technique": {
+        "id": "T0826",
+        "name": "Loss of Availability"
+      },
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Interrupción de la supervisión",
+      "controls": [
+        "Segmentación IT/OT",
+        "Protección antimalware o EDR compatible con OT",
+        "Copias de respaldo probadas"
+      ],
+      "refs": [
+        "NIST SP 800-82 Rev. 3",
+        "NIST CSF 2.0",
+        "IEC 62443"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A11",
+      "asset": "estacion-ingenieria",
+      "title": "Abuso de herramientas administrativas de ingeniería",
+      "description": "Desde la estación de ingeniería se carga una configuración alterada a equipos de campo.",
+      "technique": {
+        "id": "T0843",
+        "name": "Program Download"
+      },
+      "likelihood": 2,
+      "impact": 5,
+      "impact_type": "Pérdida de integridad de configuraciones",
+      "controls": [
+        "Endurecimiento",
+        "Gestión de accesos privilegiados",
+        "Registros centralizados"
+      ],
+      "refs": [
+        "NIST SP 800-82 Rev. 3",
+        "NIST CSF 2.0",
+        "IEC 62443"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A12",
+      "asset": "gateway",
+      "title": "Denegación de servicio sobre enlaces y pasarelas",
+      "description": "Se satura o interrumpe un enlace o una pasarela y se pierde el control remoto.",
+      "technique": {
+        "id": "T0814",
+        "name": "Denial of Service"
+      },
+      "likelihood": 3,
+      "impact": 3,
+      "impact_type": "Pérdida de telemetría y de control remoto",
+      "controls": [
+        "Redundancia de enlaces",
+        "Control de flujos permitidos",
+        "Monitoreo pasivo de red"
+      ],
+      "refs": [
+        "IEC 62351",
+        "NISTIR 7628 Rev. 1",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "dos",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A13",
+      "asset": "gateway",
+      "title": "Intercepción y manipulación de tráfico",
+      "description": "Un atacante se interpone en un enlace y altera órdenes o mediciones en tránsito.",
+      "technique": {
+        "id": "T0830",
+        "name": "Adversary-in-the-Middle"
+      },
+      "likelihood": 2,
+      "impact": 4,
+      "impact_type": "Pérdida de integridad",
+      "controls": [
+        "Autenticación mutua",
+        "Cifrado cuando sea aplicable",
+        "Detección de anomalías"
+      ],
+      "refs": [
+        "IEC 62351",
+        "NISTIR 7628 Rev. 1",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "fdia",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A14",
+      "asset": "servidor-salto",
+      "title": "Configuraciones inseguras en el acceso remoto",
+      "description": "El servicio de acceso remoto queda con reglas amplias o sin doble factor.",
+      "technique": {
+        "id": "T0886",
+        "name": "Remote Services"
+      },
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Acceso inicial a la red OT",
+      "controls": [
+        "Protección de configuraciones",
+        "Control de flujos permitidos",
+        "Registro de eventos"
+      ],
+      "refs": [
+        "IEC 62351",
+        "NISTIR 7628 Rev. 1",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A15",
+      "asset": "inversor",
+      "title": "Modificación no autorizada del límite de potencia",
+      "description": "Un equipo no autorizado en la red escribe el registro de límite de potencia del inversor y reduce la generación.",
+      "technique": {
+        "id": "T0855",
+        "name": "Unauthorized Command Message"
+      },
+      "likelihood": 4,
+      "impact": 4,
+      "impact_type": "Problemas de calidad de energía y pérdida de generación",
+      "controls": [
+        "Autenticación mutua",
+        "Autorización por roles",
+        "Detección de comandos y valores anómalos"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S1",
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A16",
+      "asset": "inversor",
+      "title": "Desconexión remota del inversor",
+      "description": "Un atacante envía la orden de desconexión. Aplicada a muchos inversores a la vez puede afectar la tensión del alimentador.",
+      "technique": {
+        "id": "T0816",
+        "name": "Device Restart/Shutdown"
+      },
+      "likelihood": 3,
+      "impact": 5,
+      "impact_type": "Desconexiones",
+      "controls": [
+        "Control de acceso remoto",
+        "Detección de comandos y valores anómalos",
+        "Registros auditables"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S5",
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A17",
+      "asset": "inversor",
+      "title": "Suplantación del maestro y reconocimiento",
+      "description": "Un equipo desconocido se comporta como maestro, pide la identificación del inversor y recorre sus registros.",
+      "technique": {
+        "id": "T0846",
+        "name": "Remote System Discovery"
+      },
+      "likelihood": 4,
+      "impact": 2,
+      "impact_type": "Exposición de información",
+      "controls": [
+        "Inventario y clasificación de activos",
+        "Autenticación mutua",
+        "Detección de comandos y valores anómalos"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S2",
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A18",
+      "asset": "inversor",
+      "title": "Consigna anómala desde el maestro autorizado",
+      "description": "El maestro autorizado, bajo control de un atacante, envía una consigna fuera de los límites de ingeniería.",
+      "technique": {
+        "id": "T0836",
+        "name": "Modify Parameter"
+      },
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Comportamiento no previsto del inversor",
+      "controls": [
+        "Detección de comandos y valores anómalos",
+        "Gestión segura de configuraciones"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S3",
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A19",
+      "asset": "inversor",
+      "title": "Pérdida de telemetría por inundación de solicitudes",
+      "description": "Una ráfaga de solicitudes satura la interfaz de comunicación del inversor.",
+      "technique": {
+        "id": "T0814",
+        "name": "Denial of Service"
+      },
+      "likelihood": 3,
+      "impact": 3,
+      "impact_type": "Pérdida de visibilidad",
+      "controls": [
+        "Control de acceso remoto",
+        "Detección de comandos y valores anómalos"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S4",
+      "family": "dos",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A20",
+      "asset": "inversor",
+      "title": "Consigna válida enviada con la identidad del maestro",
+      "description": "El atacante opera desde el maestro comprometido y envía una consigna dentro de rango. En la red es indistinguible de una operación legítima.",
+      "technique": {
+        "id": "T0831",
+        "name": "Manipulation of Control"
+      },
+      "likelihood": 2,
+      "impact": 4,
+      "impact_type": "Pérdida de generación",
+      "controls": [
+        "Autorización por roles",
+        "Registros auditables",
+        "Defensa en profundidad"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": "S6",
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A21",
+      "asset": "inversor",
+      "title": "Credenciales débiles o de fábrica en inversores",
+      "description": "El inversor conserva la contraseña de fábrica o una contraseña compartida.",
+      "technique": {
+        "id": "T0812",
+        "name": "Default Credentials"
+      },
+      "likelihood": 4,
+      "impact": 4,
+      "impact_type": "Acceso no autorizado al equipo",
+      "controls": [
+        "Gestión segura de configuraciones",
+        "Autorización por roles",
+        "Control de acceso remoto"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": null,
+      "family": "acceso",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A22",
+      "asset": "inversor",
+      "title": "Firmware vulnerable en inversores",
+      "description": "El inversor opera con un firmware con vulnerabilidades conocidas.",
+      "technique": {
+        "id": "T0857",
+        "name": "System Firmware"
+      },
+      "likelihood": 2,
+      "impact": 5,
+      "impact_type": "Pérdida de control del equipo",
+      "controls": [
+        "Gestión segura de configuraciones y firmware",
+        "Inventario y clasificación de activos"
+      ],
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "lab_scenario": null,
+      "family": "suministro",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A23",
+      "asset": "nube-fabricante",
+      "title": "Software o firmware comprometido en origen",
+      "description": "Una actualización legítima del fabricante llega con código alterado.",
+      "technique": {
+        "id": "T0862",
+        "name": "Supply Chain Compromise"
+      },
+      "likelihood": 2,
+      "impact": 5,
+      "impact_type": "Propagación de compromisos",
+      "controls": [
+        "Validación de actualizaciones",
+        "Inventario de componentes y SBOM cuando aplique",
+        "Requisitos de seguridad contractuales"
+      ],
+      "refs": [
+        "NIST CSF 2.0",
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "suministro",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A24",
+      "asset": "proveedor-remoto",
+      "title": "Cuentas remotas persistentes de proveedores",
+      "description": "El proveedor conserva un acceso permanente que puede ser usado por un tercero.",
+      "technique": {
+        "id": "T0822",
+        "name": "External Remote Services"
+      },
+      "likelihood": 4,
+      "impact": 4,
+      "impact_type": "Accesos no autorizados",
+      "controls": [
+        "Cuentas temporales y trazables",
+        "Revisión de accesos",
+        "Segmentación de proveedores"
+      ],
+      "refs": [
+        "NIST CSF 2.0",
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "suministro",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A25",
+      "asset": "nube-fabricante",
+      "title": "Dependencia de servicios externos",
+      "description": "La caída o el compromiso del portal del fabricante afecta a todos los inversores de una marca.",
+      "technique": {
+        "id": "T0826",
+        "name": "Loss of Availability"
+      },
+      "likelihood": 2,
+      "impact": 4,
+      "impact_type": "Indisponibilidad",
+      "controls": [
+        "Planes de continuidad y recuperación",
+        "Evaluación de proveedores"
+      ],
+      "refs": [
+        "NIST CSF 2.0",
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3"
+      ],
+      "lab_scenario": null,
+      "family": "suministro",
+      "source": "Tabla 1 del trabajo"
+    },
+    {
+      "id": "A26",
+      "title": "Inyección de datos falsos sin conocimiento del modelo",
+      "description": "Un intermediario altera la potencia que el inversor reporta, con un valor físicamente imposible para su límite y su estado.",
+      "likelihood": 3,
+      "impact": 4,
+      "impact_type": "Decisiones de operación erróneas",
+      "controls": [
+        "Detección de comandos y valores anómalos",
+        "Autenticación mutua",
+        "Registros auditables"
+      ],
+      "lab_scenario": "S7",
+      "asset": "inversor",
+      "technique": {
+        "id": "T0856",
+        "name": "Spoof Reporting Message"
+      },
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "family": "fdia",
+      "source": "Sección 4.1 del trabajo, extendida a DER por el prototipo (la Tabla 1 nombra la inyección de datos falsos en AMI)"
+    },
+    {
+      "id": "A27",
+      "title": "Inyección de datos falsos coherente con el modelo",
+      "description": "Un intermediario que conoce los límites del inversor altera la potencia reportada con un valor falso pero físicamente posible, que elude la verificación de coherencia.",
+      "likelihood": 2,
+      "impact": 4,
+      "impact_type": "Decisiones de operación erróneas",
+      "controls": [
+        "Autenticación mutua",
+        "Contraste con otra fuente de medición",
+        "Defensa en profundidad"
+      ],
+      "lab_scenario": "S8",
+      "asset": "inversor",
+      "technique": {
+        "id": "T0856",
+        "name": "Spoof Reporting Message"
+      },
+      "refs": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ],
+      "family": "fdia",
+      "source": "Sección 4.1 del trabajo, extendida a DER por el prototipo (la Tabla 1 nombra la inyección de datos falsos en AMI)"
+    }
+  ]
+}

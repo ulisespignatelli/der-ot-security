@@ -1,0 +1,412 @@
+{
+  "meta": {
+    "title": "Arquitectura de referencia: red de distribución con DER",
+    "source": "Ciberseguridad en Redes Eléctricas Inteligentes con Generación Distribuida: Revisión Estructurada y Matriz de Controles para Entornos IT/OT (CONAIISI 2026)",
+    "scope": "Escenario hipotético de una localidad del interior de la provincia de Santa Fe. No describe un despliegue real.",
+    "note": "Las seis zonas provienen de la Sección 3 del trabajo. Los activos, direcciones, conductos y flujos son una propuesta de la Etapa 2 y deben reemplazarse con información institucional verificable."
+  },
+  "zones": [
+    {
+      "id": "PROV",
+      "short": "Proveedores",
+      "name": "Proveedores y cadena de suministro",
+      "paper": true,
+      "purdue": "Terceros",
+      "description": "Fabricantes, integradores y servicios externos con acceso lógico o físico, incluidos los canales de actualización.",
+      "frameworks": [
+        "NIST CSF 2.0",
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3"
+      ]
+    },
+    {
+      "id": "IT",
+      "short": "TI corporativa",
+      "name": "TI corporativa",
+      "paper": false,
+      "purdue": "Nivel 4",
+      "description": "Red administrativa de la distribuidora o cooperativa.",
+      "frameworks": []
+    },
+    {
+      "id": "TEL",
+      "short": "Telecomunicación",
+      "name": "Redes de telecomunicación y pasarelas de integración",
+      "paper": true,
+      "purdue": "Nivel 3.5",
+      "description": "Enlaces, pasarelas de protocolo y servicios de acceso remoto que interconectan las demás zonas.",
+      "frameworks": [
+        "IEC 62351",
+        "NISTIR 7628 Rev. 1",
+        "NIST SP 800-82 Rev. 3"
+      ]
+    },
+    {
+      "id": "CC",
+      "short": "Centro de control",
+      "name": "Centro de control y supervisión",
+      "paper": true,
+      "purdue": "Nivel 3",
+      "description": "SCADA, interfaces de operación, historiadores y estaciones de ingeniería.",
+      "frameworks": [
+        "NIST SP 800-82 Rev. 3",
+        "NIST CSF 2.0",
+        "IEC 62443"
+      ]
+    },
+    {
+      "id": "SE",
+      "short": "Subestaciones",
+      "name": "Automatización de subestaciones",
+      "paper": true,
+      "purdue": "Niveles 1-2",
+      "description": "IED, RTU, PLC y relés de protección.",
+      "frameworks": [
+        "IEC 62443",
+        "IEC 62351",
+        "IEC 61850",
+        "NIST SP 800-82 Rev. 3"
+      ]
+    },
+    {
+      "id": "DER",
+      "short": "DER",
+      "name": "Recursos energéticos distribuidos (DER)",
+      "paper": true,
+      "purdue": "Niveles 0-1",
+      "description": "Inversores inteligentes, almacenamiento y controladores de microrredes, fuera de las instalaciones de la distribuidora.",
+      "frameworks": [
+        "IEC 62443",
+        "NIST SP 800-82 Rev. 3",
+        "IEEE 2030.7"
+      ]
+    },
+    {
+      "id": "AMI",
+      "short": "AMI",
+      "name": "Infraestructura de medición avanzada (AMI)",
+      "paper": true,
+      "purdue": "Niveles 0-2",
+      "description": "Medidores inteligentes, concentradores de datos y sistemas de cabecera.",
+      "frameworks": [
+        "NISTIR 7628 Rev. 1",
+        "NIST CSF 2.0",
+        "IEC 62351"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "nube-fabricante",
+      "name": "Nube del fabricante",
+      "zone": "PROV",
+      "type": "Servicio en la nube",
+      "ip": "203.0.113.50",
+      "description": "Portal del fabricante de inversores para monitoreo y actualización."
+    },
+    {
+      "id": "proveedor-remoto",
+      "name": "Proveedor remoto",
+      "zone": "PROV",
+      "type": "Integrador",
+      "ip": "198.51.100.20",
+      "description": "Integrador que brinda soporte remoto."
+    },
+    {
+      "id": "pc-admin",
+      "name": "PC administrativas",
+      "zone": "IT",
+      "type": "PC de oficina",
+      "ip": "10.10.0.25",
+      "description": "Puestos de facturación, comercial y oficina técnica."
+    },
+    {
+      "id": "servidor-salto",
+      "name": "Servidor de salto",
+      "zone": "TEL",
+      "type": "Acceso remoto",
+      "ip": "10.10.15.10",
+      "description": "Único punto de entrada interactivo hacia la red OT."
+    },
+    {
+      "id": "pasarela-datos",
+      "name": "Pasarela de datos",
+      "zone": "TEL",
+      "type": "Pasarela de integración",
+      "ip": "10.10.15.20",
+      "description": "Réplica de solo lectura del historiador para TI."
+    },
+    {
+      "id": "gateway",
+      "name": "Pasarela protocolos",
+      "zone": "TEL",
+      "type": "Pasarela de protocolo",
+      "ip": "10.10.15.30",
+      "description": "Traduce IEC 60870-5-104 a Modbus/TCP hacia los DER."
+    },
+    {
+      "id": "scada",
+      "name": "SCADA / HMI",
+      "zone": "CC",
+      "type": "Servidor SCADA",
+      "ip": "10.10.20.10",
+      "description": "Supervisión y control de la red de distribución."
+    },
+    {
+      "id": "historiador",
+      "name": "Historiador",
+      "zone": "CC",
+      "type": "Servidor",
+      "ip": "10.10.20.20",
+      "description": "Registro histórico de mediciones y eventos."
+    },
+    {
+      "id": "estacion-ingenieria",
+      "name": "Estación de ingeniería",
+      "zone": "CC",
+      "type": "PC de ingeniería",
+      "ip": "10.10.20.30",
+      "description": "Configuración de RTU, relés e inversores."
+    },
+    {
+      "id": "rtu",
+      "name": "RTU",
+      "zone": "SE",
+      "type": "Unidad terminal remota",
+      "ip": "10.10.30.5",
+      "description": "Telecontrol de la subestación hacia el SCADA."
+    },
+    {
+      "id": "rele",
+      "name": "IED y relés",
+      "zone": "SE",
+      "type": "IED",
+      "ip": "10.10.30.15",
+      "description": "Protección de alimentadores."
+    },
+    {
+      "id": "inversor",
+      "name": "Inversor inteligente",
+      "zone": "DER",
+      "type": "Inversor",
+      "ip": "10.10.40.21",
+      "description": "Inversor fotovoltaico de usuario-generador, con interfaz Modbus/TCP."
+    },
+    {
+      "id": "data-logger",
+      "name": "Controlador de planta",
+      "zone": "DER",
+      "type": "Controlador",
+      "ip": "10.10.40.30",
+      "description": "Recolecta datos del inversor y los envía a la nube del fabricante."
+    },
+    {
+      "id": "medidor",
+      "name": "Medidor inteligente",
+      "zone": "AMI",
+      "type": "Medidor",
+      "ip": "10.10.50.40",
+      "description": "Mide energía consumida e inyectada."
+    },
+    {
+      "id": "concentrador",
+      "name": "Concentrador",
+      "zone": "AMI",
+      "type": "Concentrador",
+      "ip": "10.10.50.10",
+      "description": "Agrupa las lecturas de los medidores de un sector."
+    },
+    {
+      "id": "cabecera",
+      "name": "Sistema de cabecera",
+      "zone": "AMI",
+      "type": "Servidor",
+      "ip": "10.10.50.5",
+      "description": "Recibe las lecturas y habilita funciones remotas de corte y reconexión."
+    }
+  ],
+  "conduits": [
+    {
+      "id": "C1",
+      "from": "IT",
+      "to": "TEL",
+      "protocol": "HTTPS",
+      "port": 443,
+      "purpose": "Consulta de datos operativos replicados."
+    },
+    {
+      "id": "C2",
+      "from": "TEL",
+      "to": "CC",
+      "protocol": "RDP",
+      "port": 3389,
+      "purpose": "Sesión interactiva desde el servidor de salto, con doble factor."
+    },
+    {
+      "id": "C3",
+      "from": "CC",
+      "to": "TEL",
+      "protocol": "Replicación",
+      "port": 5432,
+      "purpose": "Réplica unidireccional del historiador."
+    },
+    {
+      "id": "C4",
+      "from": "CC",
+      "to": "SE",
+      "protocol": "IEC 60870-5-104",
+      "port": 2404,
+      "purpose": "Telecontrol de subestaciones."
+    },
+    {
+      "id": "C5",
+      "from": "CC",
+      "to": "TEL",
+      "protocol": "IEC 60870-5-104",
+      "port": 2404,
+      "purpose": "Consignas a DER a través de la pasarela de protocolos."
+    },
+    {
+      "id": "C6",
+      "from": "TEL",
+      "to": "DER",
+      "protocol": "Modbus/TCP",
+      "port": 502,
+      "purpose": "Lectura y consignas a inversores desde la pasarela."
+    },
+    {
+      "id": "C7",
+      "from": "DER",
+      "to": "PROV",
+      "protocol": "MQTT/TLS",
+      "port": 8883,
+      "purpose": "Telemetría saliente hacia la nube del fabricante."
+    },
+    {
+      "id": "C8",
+      "from": "PROV",
+      "to": "TEL",
+      "protocol": "VPN",
+      "port": 443,
+      "purpose": "Soporte remoto del proveedor, solo hasta el servidor de salto."
+    },
+    {
+      "id": "C9",
+      "from": "IT",
+      "to": "AMI",
+      "protocol": "HTTPS",
+      "port": 443,
+      "purpose": "Consulta de lecturas para facturación."
+    }
+  ],
+  "flows": [
+    {
+      "id": "F1",
+      "src": "pc-admin",
+      "dst": "pasarela-datos",
+      "protocol": "HTTPS",
+      "port": 443
+    },
+    {
+      "id": "F2",
+      "src": "servidor-salto",
+      "dst": "scada",
+      "protocol": "RDP",
+      "port": 3389
+    },
+    {
+      "id": "F3",
+      "src": "historiador",
+      "dst": "pasarela-datos",
+      "protocol": "Replicación",
+      "port": 5432
+    },
+    {
+      "id": "F4",
+      "src": "scada",
+      "dst": "rtu",
+      "protocol": "IEC 60870-5-104",
+      "port": 2404
+    },
+    {
+      "id": "F5",
+      "src": "scada",
+      "dst": "gateway",
+      "protocol": "IEC 60870-5-104",
+      "port": 2404
+    },
+    {
+      "id": "F6",
+      "src": "gateway",
+      "dst": "inversor",
+      "protocol": "Modbus/TCP",
+      "port": 502
+    },
+    {
+      "id": "F7",
+      "src": "data-logger",
+      "dst": "nube-fabricante",
+      "protocol": "MQTT/TLS",
+      "port": 8883
+    },
+    {
+      "id": "F8",
+      "src": "proveedor-remoto",
+      "dst": "servidor-salto",
+      "protocol": "VPN",
+      "port": 443
+    },
+    {
+      "id": "F9",
+      "src": "data-logger",
+      "dst": "inversor",
+      "protocol": "Modbus/TCP",
+      "port": 502
+    },
+    {
+      "id": "F10",
+      "src": "medidor",
+      "dst": "concentrador",
+      "protocol": "DLMS/COSEM",
+      "port": 4059
+    },
+    {
+      "id": "F11",
+      "src": "concentrador",
+      "dst": "cabecera",
+      "protocol": "DLMS/COSEM",
+      "port": 4059
+    },
+    {
+      "id": "F12",
+      "src": "pc-admin",
+      "dst": "cabecera",
+      "protocol": "HTTPS",
+      "port": 443
+    },
+    {
+      "id": "F13",
+      "src": "estacion-ingenieria",
+      "dst": "inversor",
+      "protocol": "Modbus/TCP",
+      "port": 502,
+      "note": "Configuración directa sin pasar por la pasarela."
+    },
+    {
+      "id": "F14",
+      "src": "nube-fabricante",
+      "dst": "inversor",
+      "protocol": "Modbus/TCP",
+      "port": 502,
+      "note": "Puerto del inversor expuesto a Internet."
+    },
+    {
+      "id": "F15",
+      "src": "pc-admin",
+      "dst": "scada",
+      "protocol": "RDP",
+      "port": 3389,
+      "note": "Acceso directo desde TI sin servidor de salto."
+    }
+  ]
+}
