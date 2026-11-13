@@ -24,7 +24,7 @@
   "max_illegal_address_errors": 3,
   "learned_from": {
     "capture": "S0.pcap",
-    "seconds": 19.9,
+    "seconds": 20.0,
     "requests": 398,
     "peak_requests_per_second": 20
   }

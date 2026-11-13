@@ -147,7 +147,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px
 <div class="wrap">
 <header class="top">
   <h1>Ciberseguridad OT en redes de distribución con DER</h1>
-  <p>Arquitectura de referencia, modelo de amenazas, laboratorio de detección e indicadores de madurez para redes eléctricas con generación distribuida.</p>
+  <p>Sensor pasivo de Modbus/TCP, laboratorio de detección, modelo de amenazas e indicadores de madurez para redes eléctricas con generación distribuida.</p>
 </header>
 <nav id="nav" aria-label="Etapas"></nav>
 
@@ -205,15 +205,18 @@ document.addEventListener("mousemove", e => {
 (function () {
   const s = DATA.lab.summary, v = DATA.validation;
   const crit = DATA.threats.filter(t => t.level === "Crítico").length;
+  const tp = DATA.third_party, tpAttacks = tp ? tp.captures.filter(c => c.description !== "Operación normal") : [];
   $("#v-resumen").innerHTML = `
-  <p class="note">La arquitectura es un escenario hipotético, las ponderaciones de riesgo son provisionales y las respuestas de expertos son sintéticas. Los resultados del laboratorio provienen de una ejecución real sobre equipos emulados.</p>
+  <p class="note">El sensor se ejecutó de verdad sobre el laboratorio emulado y sobre capturas públicas de equipos reales. La arquitectura es un escenario hipotético, las ponderaciones de riesgo son provisionales y las respuestas de expertos son sintéticas.</p>
   <div class="grid tiles">
     <div class="tile"><div class="v">${v.violations} <small>de ${v.flows.length}</small></div><div class="k">flujos que violan la segmentación</div></div>
     <div class="tile"><div class="v">${crit} <small>de ${DATA.threats.length}</small></div><div class="k">amenazas de nivel crítico</div></div>
-    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados por el sensor pasivo</div></div>
-    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en ${s.baseline_requests} solicitudes de operación normal</div></div>
+    ${tp ? `<div class="tile"><div class="v">${tpAttacks.filter(c => c.rules.length).length} <small>de ${tpAttacks.length}</small></div><div class="k">ataques detectados en capturas públicas de equipos reales</div></div>` : ""}
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados en el laboratorio emulado</div></div>
+    <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en operación normal, emulada y real</div></div>
   </div>
   <div class="grid stages">
+    <a class="card stage" href="#laboratorio"><span class="tag">Herramienta</span><h3>Sensor pasivo de Modbus/TCP</h3><p>Lee una captura o una interfaz de red, arma el inventario, aprende la operación normal y alerta ante desvíos. Nunca transmite.</p></a>
     <a class="card stage" href="#arquitectura"><span class="tag">Etapa 2</span><h3>Arquitectura de referencia</h3><p>Zonas, activos y conductos descritos como datos. Un validador marca los flujos que no pasan por un conducto declarado.</p></a>
     <a class="card stage" href="#amenazas"><span class="tag">Etapa 3</span><h3>Modelo de amenazas</h3><p>Amenazas por zona con sus controles y marcos, ponderadas por probabilidad e impacto y asociadas a MITRE ATT&amp;CK for ICS.</p></a>
     <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. El sensor pasivo analiza la captura con una política manual y con una línea base que aprende solo.</p></a>
@@ -647,7 +650,7 @@ document.addEventListener("mousemove", e => {
   draw();
 })();
 
-$("#foot").textContent = "Prototipo de investigación. El laboratorio valida la lógica de detección sobre equipos emulados y no reemplaza pruebas con equipos reales.";
+$("#foot").textContent = "Prototipo de investigación. El sensor fue validado con un laboratorio emulado y con cuatro capturas públicas; no fue probado en una red en operación.";
 route();
 </script>
 </body>
