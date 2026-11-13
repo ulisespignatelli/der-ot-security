@@ -1,5 +1,15 @@
 # Cambios
 
+## 0.8.0 (13 de noviembre de 2026)
+
+- Registro de auditoría append-only encadenado por hashes, con `python -m sensor verify`.
+  No es fail-closed: el sensor sigue detectando si no puede escribir, y lo informa.
+- Política fijable por hash con `--policy-sha256`.
+- `python -m sensor propose`: compara la política en uso con lo observado y lista los cambios
+  marcando cuáles aflojan la detección. Nunca modifica la política vigente.
+- Corpus de 21 tramas Modbus límite y malformadas, con sus pruebas.
+- El laboratorio deja su propio registro auditable en `results/audit.jsonl`.
+
 ## 0.7.0 (13 de noviembre de 2026)
 
 - Reproducción grabada en el sitio: la pestaña En vivo muestra al sensor analizando dos capturas

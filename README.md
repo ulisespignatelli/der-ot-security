@@ -17,7 +17,7 @@ agregar tráfico a una red que no lo tolera.
 
 | Componente | Qué hace | Carpeta |
 |---|---|---|
-| **Sensor pasivo** | Lee una captura o una interfaz de red, arma el inventario de activos, aprende una línea base y alerta ante desvíos. Nunca transmite | `sensor/` |
+| **Sensor pasivo** | Lee una captura o una interfaz de red, arma el inventario de activos, aprende una línea base, alerta ante desvíos y deja un registro auditable. Nunca transmite | `sensor/` |
 | **Laboratorio** | Emula un inversor, una pasarela y un atacante; ejecuta 8 ataques y mide qué detecta el sensor, grabado o en tiempo real | `lab/` |
 | **Arquitectura de referencia** | Zonas, activos y conductos como datos, con un validador de segmentación | `model/architecture.json`, `tools/validate_architecture.py` |
 | **Modelo de amenazas** | 27 amenazas por zona y por tipo, con controles, marcos y MITRE ATT&CK for ICS | `model/threats.json`, `tools/risk_matrix.py` |
@@ -39,11 +39,17 @@ python -m sensor analyze captura.pcap
 # 2. Aprender la línea base de un período de operación normal
 python -m sensor learn normal.pcap -o linea_base.json
 
-# 3. Analizar otra captura contra esa línea base
-python -m sensor analyze captura.pcap --policy linea_base.json --json resultado.json
+# 3. Analizar otra captura contra esa línea base, dejando registro auditable
+python -m sensor analyze captura.pcap --policy linea_base.json --audit registro.jsonl
 
 # 4. Escuchar una interfaz conectada a un puerto espejo
 sudo python -m sensor live --iface eth0 --policy linea_base.json
+
+# 5. Proponer cambios a una política en uso, sin aplicarlos
+python -m sensor propose captura.pcap --policy linea_base.json -o propuesta.json
+
+# 6. Comprobar que un registro de auditoría no fue alterado
+python -m sensor verify registro.jsonl
 ```
 
 `analyze` termina con código 1 si hubo alertas, para poder usarlo en scripts.
@@ -78,6 +84,11 @@ sensor falla, la operación sigue igual.
 
 **Qué soporta el lector de capturas:** PCAP y PCAPNG; Ethernet con etiquetas VLAN, Linux cooked,
 IP sin encapsular y loopback; IPv4 e IPv6; descarte de retransmisiones y duplicados TCP.
+
+**Tramas hostiles:** `tests/corpus/modbus_edge_cases.json` reúne 21 tramas límite y malformadas
+(encabezados truncados, longitudes falsas, cantidades de bytes mentidas, identificaciones
+desbordadas, varios ADU en un segmento). Una prueba las pasa todas por el decodificador y por el
+motor de reglas: ninguna debe fallar ni interpretarse de más.
 
 ## Validación con capturas de terceros
 
@@ -144,6 +155,60 @@ python tools/record_replay.py ataque.pcap --baseline normal.pcap --title "Títul
 python web/build.py
 ```
 
+## Registro de auditoría
+
+Con `--audit` cada alerta se agrega a un archivo JSONL donde cada línea guarda el hash de la
+anterior. Editar o quitar una línea rompe la cadena a partir de ahí, y `verify` dice en cuál y
+por qué. Es el requisito de registros auditables de IEC 62443-3-3 (SR 6.1).
+
+```bash
+python -m sensor verify results/audit.jsonl
+# results/audit.jsonl: cadena íntegra, 23 registros.
+```
+
+`python -m lab.run_lab` deja su propio registro en `results/audit.jsonl`, y la integración
+continua lo verifica en cada subida.
+
+**No es fail-closed, y es deliberado.** Un portón entre un agente y sus herramientas hace bien en
+bloquear cuando no puede auditar. Un sensor de red industrial es lo contrario: si el disco se
+llena, dejar de analizar sería quedarse ciego justo cuando hace falta ver. El sensor sigue
+detectando, cuenta los registros que no pudo escribir y lo informa al cerrar. Lo que sí quedó
+escrito mantiene su integridad: la cadena nunca se reconstruye para tapar un hueco.
+
+## Política fijada por hash
+
+`learn` imprime el hash de la política que genera. Pasándolo con `--policy-sha256`, el sensor se
+niega a ejecutarse si el archivo cambió:
+
+```bash
+python -m sensor analyze captura.pcap --policy linea_base.json --policy-sha256 a26d886f...
+```
+
+El hash de la política en uso queda también en el registro de auditoría, así que cada alerta es
+atribuible a una configuración concreta.
+
+## Proponer cambios sin aplicarlos
+
+`learn` escribe una política desde cero. `propose` es para cuando ya hay una en uso: compara lo
+que permite con lo que una captura muestra, y lista los cambios marcando su efecto.
+
+```
+$ python -m sensor propose captura.pcap --policy linea_base.json -o propuesta.json
+
+  AFLOJA   [escrituras] Permitir escrituras al registro 10 de 10.10.40.21
+            Se observaron valores de 60 a 60; hoy dispara R10
+  AFLOJA   [tasa] Subir el límite de 40 a 42 solicitudes por segundo
+  revisar  [maestros] 10.10.99.99 está autorizado y no aparece
+```
+
+- **afloja**: la política pasaría a permitir algo que hoy genera una alerta. Es lo que un
+  ingeniero tiene que revisar antes de aceptar.
+- **revisar**: la política permite algo que esta captura no mostró. No se quita: que algo no
+  aparezca en media hora de tráfico no prueba que no se use.
+
+La política vigente nunca se modifica, y sin `-o` no se escribe nada. `propose` devuelve código 1
+si algún cambio afloja, para poder usarlo en una revisión automática.
+
 ## El laboratorio
 
 ```
@@ -204,8 +269,9 @@ GitHub Pages sobre la carpeta `docs/`.
 python -m unittest
 ```
 
-26 pruebas: modelo, laboratorio grabado y en vivo, reproducción, lector de capturas, línea base y
-línea de comandos. El historial de versiones está en `CHANGELOG.md`.
+40 pruebas: modelo, laboratorio grabado y en vivo, reproducción, lector de capturas, corpus de
+tramas malformadas, línea base, propuestas, registro de auditoría y línea de comandos. El
+historial de versiones está en `CHANGELOG.md`.
 
 ## Cómo adaptarlo
 
@@ -214,6 +280,7 @@ línea de comandos. El historial de versiones está en `CHANGELOG.md`.
 3. Para una red propia: capturar tráfico normal, ejecutar `python -m sensor learn`, revisar la
    línea base y agregarle a mano los límites de ingeniería y, si se conoce el equipo, la sección
    `coherence` (ver `lab/policy.json`).
+4. Con la política ya en uso, revisar los cambios con `python -m sensor propose` antes de tocarla.
 
 ## Relación con el trabajo de investigación
 
@@ -268,7 +335,11 @@ Cada amenaza de `model/threats.json` indica su origen en el campo `source`.
 - **La captura en vivo se probó en Linux.** La variante para Windows (scapy y Npcap) no está probada.
 - **El lector no reordena segmentos TCP** que llegan fuera de orden ni reensambla fragmentos IP.
 - **La línea base acepta como normal todo lo que observa.** Aprenderla de un período con un
-  incidente en curso lo deja autorizado.
+  incidente en curso lo deja autorizado. `propose` reduce el riesgo al mostrar cada cambio antes
+  de aplicarlo, pero no distingue tráfico legítimo de un ataque en curso.
+- **El registro de auditoría detecta manipulaciones, no las impide.** Quien pueda escribir el
+  archivo puede borrarlo entero o rehacer la cadena desde cero; para evitarlo hace falta enviarlo
+  a un sistema externo de solo agregado, que el prototipo no implementa.
 - **La regla de coherencia** usa la relación simplificada del emulador entre potencia, límite y
   conexión; en un inversor real la potencia depende también de la irradiancia.
 - **El laboratorio evalúa 8 de las 27 amenazas**, todas de la zona DER, y su mapa de registros no

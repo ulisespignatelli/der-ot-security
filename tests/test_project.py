@@ -6,7 +6,7 @@ import struct
 import tempfile
 
 from lab import detector, live, run_lab
-from sensor import baseline, engine, pcap
+from sensor import audit, baseline, engine, modbus, pcap, propose
 from sensor.__main__ import main as sensor_cli
 from tools import expert_consensus, risk_matrix, validate_architecture
 
@@ -231,6 +231,133 @@ class Sensor(unittest.TestCase):
             text = source.read_text(encoding="utf-8")
             for forbidden in (".send(", ".sendall(", ".sendto(", "create_connection", ".connect("):
                 self.assertNotIn(forbidden, text, f"{source.name} contiene {forbidden}")
+
+
+class Auditoria(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "log.jsonl"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write(self, n):
+        log = audit.AuditLog(self.path, fsync=False)
+        for i in range(n):
+            log.append({"kind": "alerta", "rule": f"R{i}"})
+        return log
+
+    def test_chain_is_verifiable_and_continues_across_sessions(self):
+        self.write(3)
+        state = audit.verify(self.path)
+        self.assertTrue(state["ok"])
+        self.assertEqual(state["records"], 3)
+        second = self.write(2)                       # reabre y sigue la cadena
+        self.assertEqual(second.seq, 5)
+        self.assertTrue(audit.verify(self.path)["ok"])
+
+    def test_editing_a_record_breaks_the_chain(self):
+        self.write(4)
+        lines = self.path.read_text(encoding="utf-8").splitlines()
+        lines[2] = lines[2].replace('"R2"', '"R9"')
+        self.path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        state = audit.verify(self.path)
+        self.assertFalse(state["ok"])
+        self.assertEqual(state["broken_at"], 2)
+        self.assertEqual(state["records"], 2)        # lo anterior sigue siendo confiable
+
+    def test_deleting_a_record_breaks_the_chain(self):
+        self.write(4)
+        lines = self.path.read_text(encoding="utf-8").splitlines()
+        del lines[1]
+        self.path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self.assertFalse(audit.verify(self.path)["ok"])
+
+    def test_reopening_a_broken_log_is_refused(self):
+        self.write(2)
+        self.path.write_text(self.path.read_text(encoding="utf-8").replace('"R1"', '"R7"'), encoding="utf-8")
+        with self.assertRaises(ValueError):
+            audit.AuditLog(self.path)
+
+    def test_a_failed_write_does_not_stop_the_sensor(self):
+        """En OT el sensor no es fail-closed: sigue detectando y lo informa."""
+        log = self.write(1)
+        log.path = Path(self.tmp.name)               # un directorio: no se puede escribir
+        self.assertIsNone(log.append({"kind": "alerta"}))
+        self.assertEqual(log.failed, 1)
+        self.assertEqual(log.seq, 1)                 # la cadena no avanza con lo que no se escribió
+        self.assertIn("ATENCIÓN", log.summary())
+
+    def test_policy_digest_ignores_key_order(self):
+        self.assertEqual(audit.policy_digest({"a": 1, "b": [2, 3]}),
+                         audit.policy_digest({"b": [2, 3], "a": 1}))
+        self.assertNotEqual(audit.policy_digest({"a": 1}), audit.policy_digest({"a": 2}))
+
+
+class Propuestas(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.pcaps = ROOT / "results" / "pcap"
+        cls.base = baseline.learn(cls.pcaps / "S0.pcap")
+
+    def test_proposal_only_loosens_and_explains_each_change(self):
+        result = propose.propose(self.pcaps / "S6.pcap", self.base)
+        areas = {c["area"] for c in result["changes"]}
+        self.assertEqual({c["effect"] for c in result["changes"]}, {"afloja"})
+        self.assertIn("escrituras", areas)
+        self.assertTrue(all(c["detail"] for c in result["changes"]))
+
+    def test_proposal_never_modifies_the_policy_in_use(self):
+        before = json.dumps(self.base, sort_keys=True)
+        result = propose.propose(self.pcaps / "S1.pcap", self.base)
+        self.assertEqual(json.dumps(self.base, sort_keys=True), before)
+        self.assertIsNot(result["proposal"], self.base)
+
+    def test_applying_the_proposal_silences_that_capture(self):
+        result = propose.propose(self.pcaps / "S6.pcap", self.base)
+        self.assertTrue(engine.analyse(self.pcaps / "S6.pcap", self.base)["alerts"])
+        self.assertEqual(engine.analyse(self.pcaps / "S6.pcap", result["proposal"])["alerts"], [])
+
+    def test_a_covered_capture_proposes_nothing(self):
+        self.assertEqual(propose.propose(self.pcaps / "S0.pcap", self.base)["changes"], [])
+
+    def test_unseen_entries_are_flagged_for_review_not_removed(self):
+        current = dict(self.base, authorized_masters=["10.10.15.30", "10.10.99.99"])
+        result = propose.propose(self.pcaps / "S0.pcap", current)
+        review = [c for c in result["changes"] if c["effect"] == "revisar"]
+        self.assertTrue(any("10.10.99.99" in c["detail"] for c in review))
+        self.assertIn("10.10.99.99", result["proposal"]["authorized_masters"])
+
+
+class Corpus(unittest.TestCase):
+    """Tramas límite y malformadas: el sensor no debe fallar ni interpretar de más."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cases = json.loads((ROOT / "tests" / "corpus" / "modbus_edge_cases.json").read_text(encoding="utf-8"))["cases"]
+        cls.read = bytes.fromhex(next(c["hex"] for c in cls.cases if c["name"] == "lectura válida"))
+
+    def test_every_case_is_decoded_as_expected_and_never_raises(self):
+        for c in self.cases:
+            with self.subTest(c["name"]):
+                raw = bytes.fromhex(c["hex"])
+                self.assertEqual(len(modbus.split_adus(raw)[0]), c["adus"], c["why"])
+                det = engine.Detector({"authorized_masters": ["10.0.0.1"]})
+                if c["direction"] == "solicitud":
+                    det.feed(1.0, "10.0.0.9", 40000, "10.0.0.2", 502, raw)
+                else:
+                    det.feed(1.0, "10.0.0.1", 40000, "10.0.0.2", 502, self.read)
+                    det.feed(1.1, "10.0.0.2", 502, "10.0.0.1", 40000, raw)
+
+    def test_a_lying_byte_count_yields_no_written_values(self):
+        raw = bytes.fromhex(next(c["hex"] for c in self.cases if "cantidad de bytes mentida" in c["name"]))
+        adu = modbus.parse_adu(modbus.split_adus(raw)[0][0])
+        self.assertEqual(modbus.written_values(adu["fc"], adu["data"]), [])
+
+    def test_a_valid_multiple_write_yields_its_values(self):
+        raw = bytes.fromhex(next(c["hex"] for c in self.cases if c["name"] == "escritura múltiple válida"))
+        adu = modbus.parse_adu(modbus.split_adus(raw)[0][0])
+        self.assertEqual(modbus.written_values(adu["fc"], adu["data"]), [(10, 50), (11, 60)])
 
 
 if __name__ == "__main__":

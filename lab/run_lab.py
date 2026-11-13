@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sensor import baseline
+from sensor import audit, baseline
 
 from . import detector, modbus
 from .inverter_sim import Inverter
@@ -185,6 +185,12 @@ def evaluate(scenario, analysis):
 def main(baseline_seconds=20.0, save=True):
     (RESULTS / "pcap").mkdir(parents=True, exist_ok=True)
     policy = json.loads((Path(__file__).parent / "policy.json").read_text(encoding="utf-8"))
+    log = None
+    if save:                       # un registro nuevo por ejecución, encadenado
+        (RESULTS / "audit.jsonl").unlink(missing_ok=True)
+        log = audit.AuditLog(RESULTS / "audit.jsonl")
+        log.append({"kind": "inicio", "command": "lab.run_lab", "policy": "lab/policy.json",
+                    "policy_sha256": audit.policy_digest(policy)})
     lab = Lab()
     out = []
     try:
@@ -192,6 +198,10 @@ def main(baseline_seconds=20.0, save=True):
             pcap, packets, state = lab.run(sc, baseline_seconds)
             analysis = detector.analyse(pcap, policy)
             fired, outcome = evaluate(sc, analysis)
+            if log:
+                log.append({"kind": "escenario", "id": sc["id"], "name": sc["name"], "outcome": outcome})
+                for alert in analysis["alerts"]:
+                    log.alert(alert, source=pcap.name)
             out.append({"id": sc["id"], "name": sc["name"], "description": sc["description"],
                         "threat": sc["threat"], "expected_rules": sc["expected"], "fired_rules": fired,
                         "missing_rules": sorted(set(sc["expected"]) - set(fired)),
@@ -217,6 +227,9 @@ def main(baseline_seconds=20.0, save=True):
                "baseline_seconds": baseline_seconds, "baseline_alerts": len(base["alerts"]),
                "detected_learned": sum(r["learned_outcome"] == "detectado" for r in attacks),
                "rules": detector.RULES, "policy": policy, "learned_policy": learned, "inventory": inventory}
+    if log:
+        log.append({"kind": "fin", "attacks": len(attacks), "detected": summary["detected"]})
+        print(log.summary())
     if save:
         (RESULTS / "learned_policy.json").write_text(json.dumps(learned, indent=2, ensure_ascii=False), encoding="utf-8")
         (RESULTS / "lab_results.json").write_text(

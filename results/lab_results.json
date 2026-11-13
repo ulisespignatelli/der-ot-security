@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generated": "2026-11-13T12:15:29+00:00",
+    "generated": "2026-11-13T14:47:31+00:00",
     "attacks": 8,
     "detected": 6,
     "baseline_packets": 796,
@@ -157,8 +157,8 @@
         "exceptions": 0,
         "max_requests_per_second": 20,
         "writes": {},
-        "first_seen": 1794572118.518215,
-        "last_seen": 1794572119.425665
+        "first_seen": 1794581240.674329,
+        "last_seen": 1794581241.581472
       },
       {
         "ip": "10.10.40.21",
@@ -185,8 +185,8 @@
         "exceptions": 4,
         "max_requests_per_second": 0,
         "writes": {},
-        "first_seen": 1794572118.518215,
-        "last_seen": 1794572119.42577
+        "first_seen": 1794581240.674329,
+        "last_seen": 1794581241.581518
       },
       {
         "ip": "10.10.40.99",
@@ -210,8 +210,8 @@
         "exceptions": 0,
         "max_requests_per_second": 7,
         "writes": {},
-        "first_seen": 1794572119.018791,
-        "last_seen": 1794572119.019549
+        "first_seen": 1794581241.174614,
+        "last_seen": 1794581241.17556
       }
     ]
   },
@@ -273,7 +273,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794572117.958,
+          "time": 1794581240.111,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -282,7 +282,7 @@
           "name": "Escritura desde un maestro no autorizado",
           "technique": "T0855",
           "severity": "alta",
-          "time": 1794572117.958,
+          "time": 1794581240.111,
           "source": "10.10.40.99",
           "detail": "Escritura con código de función 6 desde 10.10.40.99"
         }
@@ -331,7 +331,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794572119.019,
+          "time": 1794581241.175,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -340,7 +340,7 @@
           "name": "Solicitud de identificación o diagnóstico",
           "technique": "T0888",
           "severity": "media",
-          "time": 1794572119.019,
+          "time": 1794581241.175,
           "source": "10.10.40.99",
           "detail": "Código de función 43, ausente en la operación normal"
         },
@@ -349,7 +349,7 @@
           "name": "Barrido de registros",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794572119.019,
+          "time": 1794581241.176,
           "source": "10.10.40.99",
           "detail": "3 lecturas a direcciones inexistentes"
         }
@@ -393,7 +393,7 @@
           "name": "Consigna fuera de los límites de ingeniería",
           "technique": "T0836",
           "severity": "alta",
-          "time": 1794572120.079,
+          "time": 1794581242.238,
           "source": "10.10.15.30",
           "detail": "Límite de potencia (%): valor 5, fuera de 20 a 100"
         }
@@ -437,7 +437,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794572121.138,
+          "time": 1794581243.301,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -446,7 +446,7 @@
           "name": "Tasa de solicitudes anómala",
           "technique": "T0814",
           "severity": "alta",
-          "time": 1794572121.142,
+          "time": 1794581243.307,
           "source": "10.10.40.99",
           "detail": "Más de 50 solicitudes por segundo"
         }
@@ -491,7 +491,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794572122.301,
+          "time": 1794581244.472,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -500,7 +500,7 @@
           "name": "Escritura desde un maestro no autorizado",
           "technique": "T0855",
           "severity": "alta",
-          "time": 1794572122.301,
+          "time": 1794581244.472,
           "source": "10.10.40.99",
           "detail": "Escritura con código de función 6 desde 10.10.40.99"
         },
@@ -509,7 +509,7 @@
           "name": "Orden de desconexión del inversor",
           "technique": "T0816",
           "severity": "alta",
-          "time": 1794572122.301,
+          "time": 1794581244.472,
           "source": "10.10.40.99",
           "detail": "Escritura que desconecta el inversor de la red"
         }
@@ -581,7 +581,7 @@
           "name": "Telemetría físicamente incoherente",
           "technique": "T0856",
           "severity": "alta",
-          "time": 1794572124.532,
+          "time": 1794581246.699,
           "source": "10.10.40.21",
           "detail": "Reporta 6500 W, por encima del máximo posible de 5250 W con límite 100 %"
         }

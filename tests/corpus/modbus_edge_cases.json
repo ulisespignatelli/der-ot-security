@@ -1,0 +1,152 @@
+{
+  "comment": "Tramas Modbus/TCP límite y malformadas. El sensor debe procesarlas sin fallar y sin interpretar de más. 'adus' es la cantidad de ADU completos que debe reconocer; 'direction' dice si la trama va hacia el esclavo o vuelve de él.",
+  "cases": [
+    {
+      "name": "encabezado truncado",
+      "hex": "0001000000",
+      "direction": "solicitud",
+      "why": "Menos de 8 bytes: no alcanza para un ADU",
+      "adus": 0
+    },
+    {
+      "name": "longitud cero",
+      "hex": "00010000000001",
+      "direction": "solicitud",
+      "why": "La longitud declarada es inválida",
+      "adus": 0
+    },
+    {
+      "name": "longitud uno",
+      "hex": "00010000000101",
+      "direction": "solicitud",
+      "why": "Una longitud de 1 no deja lugar ni para la unidad",
+      "adus": 0
+    },
+    {
+      "name": "longitud fuera del máximo",
+      "hex": "00010000ffff0103",
+      "direction": "solicitud",
+      "why": "Excede el máximo de Modbus/TCP",
+      "adus": 0
+    },
+    {
+      "name": "identificador de protocolo distinto de cero",
+      "hex": "000100070006010300000002",
+      "direction": "solicitud",
+      "why": "No es Modbus/TCP: se descarta sin interpretarlo",
+      "adus": 0
+    },
+    {
+      "name": "ADU incompleto",
+      "hex": "00010000000601030000",
+      "direction": "solicitud",
+      "why": "Faltan bytes: queda esperando el resto, no se interpreta a medias",
+      "adus": 0
+    },
+    {
+      "name": "longitud declarada mayor que los datos",
+      "hex": "000100000028010300000002",
+      "direction": "solicitud",
+      "why": "Declara más bytes de los que trae: se espera el resto en vez de leer de más",
+      "adus": 0
+    },
+    {
+      "name": "lectura válida",
+      "hex": "000100000006010300000003",
+      "direction": "solicitud",
+      "why": "Caso normal de referencia",
+      "adus": 1
+    },
+    {
+      "name": "lectura de cantidad cero",
+      "hex": "000200000006010300000000",
+      "direction": "solicitud",
+      "why": "Cantidad cero: el ADU es válido en la red aunque el pedido no tenga sentido",
+      "adus": 1
+    },
+    {
+      "name": "lectura de dirección máxima",
+      "hex": "0003000000060103ffff007d",
+      "direction": "solicitud",
+      "why": "Dirección en el borde del espacio de registros",
+      "adus": 1
+    },
+    {
+      "name": "escritura simple truncada",
+      "hex": "0004000000040106000a",
+      "direction": "solicitud",
+      "why": "Faltan los dos bytes del valor: no debe interpretarse como escritura",
+      "adus": 1
+    },
+    {
+      "name": "escritura múltiple con cantidad de bytes mentida",
+      "hex": "00050000000b0110000a00026300010002",
+      "direction": "solicitud",
+      "why": "La cantidad de bytes no concuerda con la cantidad de registros",
+      "adus": 1
+    },
+    {
+      "name": "escritura múltiple de cero registros",
+      "hex": "0006000000070110000a000000",
+      "direction": "solicitud",
+      "why": "Cantidad cero: no hay valores que extraer",
+      "adus": 1
+    },
+    {
+      "name": "escritura múltiple válida",
+      "hex": "00070000000b0110000a0002040032003c",
+      "direction": "solicitud",
+      "why": "Dos registros escritos en una sola solicitud",
+      "adus": 1
+    },
+    {
+      "name": "código de función cero",
+      "hex": "0008000000020100",
+      "direction": "solicitud",
+      "why": "Código inválido según la norma",
+      "adus": 1
+    },
+    {
+      "name": "código de función 255",
+      "hex": "00090000000201ff",
+      "direction": "solicitud",
+      "why": "Código reservado",
+      "adus": 1
+    },
+    {
+      "name": "dos ADU en un segmento",
+      "hex": "000a00000006010300000003000b000000060103000a0002",
+      "direction": "solicitud",
+      "why": "Varias solicitudes encadenadas en el mismo segmento TCP",
+      "adus": 2
+    },
+    {
+      "name": "excepción dirección ilegal",
+      "hex": "000100000003018302",
+      "direction": "respuesta",
+      "why": "Excepción 2: dirección inexistente",
+      "adus": 1
+    },
+    {
+      "name": "respuesta con cantidad de bytes mentida",
+      "hex": "00010000000701030a00010001",
+      "direction": "respuesta",
+      "why": "Dice diez bytes de datos y trae cuatro",
+      "adus": 1
+    },
+    {
+      "name": "identificación con longitud desbordada",
+      "hex": "00010000000d012b0e010100000100c8414243",
+      "direction": "respuesta",
+      "why": "Un objeto declara 200 bytes y el ADU tiene tres",
+      "adus": 1
+    },
+    {
+      "name": "identificación sin objetos",
+      "hex": "000100000008012b0e0101000000",
+      "direction": "respuesta",
+      "why": "Respuesta de identificación vacía",
+      "adus": 1
+    }
+  ]
+}

@@ -19,4 +19,7 @@ jobs:
       - name: Sensor sobre las capturas del laboratorio
         run: |
           python -m sensor learn results/pcap/S0.pcap -o /tmp/linea_base.json
-          python -m sensor analyze results/pcap/S0.pcap --policy /tmp/linea_base.json
+          python -m sensor analyze results/pcap/S0.pcap --policy /tmp/linea_base.json --audit /tmp/auditoria.jsonl
+          python -m sensor verify /tmp/auditoria.jsonl
+          python -m sensor verify results/audit.jsonl
+          python -m sensor propose results/pcap/S0.pcap --policy /tmp/linea_base.json

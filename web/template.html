@@ -220,7 +220,7 @@ document.addEventListener("mousemove", e => {
     <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en operación normal, emulada y real</div></div>
   </div>
   <div class="grid stages">
-    <a class="card stage" href="#laboratorio"><span class="tag">Herramienta</span><h3>Sensor pasivo de Modbus/TCP</h3><p>Lee una captura o una interfaz de red, arma el inventario, aprende la operación normal y alerta ante desvíos. Nunca transmite.</p></a>
+    <a class="card stage" href="#laboratorio"><span class="tag">Herramienta</span><h3>Sensor pasivo de Modbus/TCP</h3><p>Lee una captura o una interfaz de red, arma el inventario, aprende la operación normal, alerta ante desvíos y deja un registro auditable. Nunca transmite.</p></a>
     <a class="card stage" href="#arquitectura"><span class="tag">Etapa 2</span><h3>Arquitectura de referencia</h3><p>Zonas, activos y conductos descritos como datos. Un validador marca los flujos que no pasan por un conducto declarado.</p></a>
     <a class="card stage" href="#amenazas"><span class="tag">Etapa 3</span><h3>Modelo de amenazas</h3><p>Amenazas por zona con sus controles y marcos, ponderadas por probabilidad e impacto y asociadas a MITRE ATT&amp;CK for ICS.</p></a>
     <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. El sensor pasivo analiza la captura con una política manual y con una línea base que aprende solo.</p></a>
@@ -436,7 +436,7 @@ document.addEventListener("mousemove", e => {
       <thead><tr><th>Regla</th><th>Técnica</th><th>Severidad</th></tr></thead>
       <tbody>${Object.entries(s.rules).map(([id, r]) => `<tr><td><span class="mono">${id}</span> ${esc(r.name)}</td><td class="mono">${r.technique}</td><td>${pill(r.severity === "alta" ? "serious" : "warning", r.severity[0].toUpperCase() + r.severity.slice(1))}</td></tr>`).join("")}</tbody>
     </table>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:0">Maestro autorizado: <span class="mono">${s.policy.authorized_masters.join(", ")}</span>. Límite de potencia admitido: ${s.policy.registers["10"].min} a ${s.policy.registers["10"].max} %.</p></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:0">Maestro autorizado: <span class="mono">${s.policy.authorized_masters.join(", ")}</span>. Límite de potencia admitido: ${s.policy.registers["10"].min} a ${s.policy.registers["10"].max} %.<br>Cada alerta de esta ejecución quedó en un registro encadenado por hashes (<span class="mono">results/audit.jsonl</span>), que la integración continua verifica en cada subida.</p></div>
   </div>`;
 })();
 
