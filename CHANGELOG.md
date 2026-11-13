@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.7.0 (13 de noviembre de 2026)
+
+- Reproducción grabada en el sitio: la pestaña En vivo muestra al sensor analizando dos capturas
+  de equipos reales, sin servidor y también en GitHub Pages.
+- `tools/record_replay.py` graba el análisis de cualquier captura para el sitio.
+
 ## 0.6.0 (13 de noviembre de 2026)
 
 - Reproducción de capturas en el panel en vivo: `python -m lab.live --replay`.

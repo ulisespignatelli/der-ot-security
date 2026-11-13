@@ -134,6 +134,16 @@ python -m lab.live --replay mitm/eth2dump-mitm-change-5m-0,5h_1.pcap --baseline 
 Sin `--speed`, elige la velocidad que hace durar la reproducción unos 45 segundos. Es una
 reproducción: no hay equipos conectados ni tráfico nuevo.
 
+**En el sitio publicado**, la pestaña En vivo trae dos reproducciones grabadas, del intermediario
+y de la inundación del conjunto de datos de Coimbra, que se ven sin instalar nada. Guardan lo que
+el sensor fue observando (solicitudes, activos y alertas a lo largo del tiempo), no el tráfico.
+Para grabar otra captura:
+
+```bash
+python tools/record_replay.py ataque.pcap --baseline normal.pcap --title "Título" --description "Qué muestra"
+python web/build.py
+```
+
 ## El laboratorio
 
 ```
@@ -173,7 +183,7 @@ Las capturas de cada escenario quedan en `results/pcap/` y se abren con Wireshar
 Con el servidor en marcha, el sitio abre en la pestaña **En vivo**: se lanza cada ataque y se ve
 su efecto y su alerta al instante. El gráfico compara la potencia real con la reportada al centro
 de control, que solo difieren durante una inyección de datos falsos. Sin el servidor (por ejemplo
-en GitHub Pages) esa pestaña muestra el comando para iniciarlo.
+en GitHub Pages) esa pestaña muestra las reproducciones grabadas.
 
 ## El modelo
 
