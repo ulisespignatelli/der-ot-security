@@ -19,6 +19,7 @@ def main():
     lab_path = ROOT / "results" / "lab_results.json"
     if not lab_path.exists():
         sys.exit("Falta results/lab_results.json. Ejecutar antes: python -m lab.run_lab")
+    third = ROOT / "results" / "third_party_validation.json"
     items, ratings, _ = expert_consensus.read_csv(ROOT / "model" / "experts_sample.csv")
     data = {
         "architecture": arch,
@@ -27,6 +28,7 @@ def main():
         "levels": threat_model["meta"]["levels"],
         "families": threat_model["meta"]["families"],
         "lab": json.loads(lab_path.read_text(encoding="utf-8")),
+        "third_party": json.loads(third.read_text(encoding="utf-8")) if third.exists() else None,
         "experts": expert_consensus.analyse(items, ratings, {t["id"]: t["risk"] for t in threats}),
         "maturity": json.loads((ROOT / "model" / "maturity.json").read_text(encoding="utf-8")),
     }

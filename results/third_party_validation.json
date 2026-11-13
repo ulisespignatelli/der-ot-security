@@ -1,0 +1,178 @@
+{
+  "dataset": "Cyber-security Modbus ICS dataset, Universidad de Coimbra (proyecto ATENA H2020)",
+  "url": "https://github.com/tjcruz-dei/ICS_PCAPS",
+  "citation": "I. Frazão, P. H. Abreu, T. Cruz, H. Araújo y P. Simões, \"Denial of Service Attacks: Detecting the Frailties of Machine Learning Algorithms in the Classification Process\", CRITIS 2018, doi:10.1007/978-3-030-05849-4_19",
+  "baseline_from": "eth2dump-clean-0,5h_1.pcap",
+  "inventory": [
+    {
+      "ip": "172.27.224.250",
+      "roles": [
+        "esclavo"
+      ],
+      "identification": null,
+      "hardware_addresses": [
+        "00:80:f4:09:51:3b"
+      ],
+      "unit_ids": [
+        1
+      ],
+      "peers": [
+        "172.27.224.251",
+        "172.27.224.70"
+      ],
+      "function_codes": [
+        3,
+        6
+      ],
+      "requests": 0,
+      "responses": 6372,
+      "exceptions": 0,
+      "max_requests_per_second": 0,
+      "writes": {
+        "6": {
+          "min": 30,
+          "max": 31,
+          "count": 621
+        }
+      },
+      "first_seen": 1535046048.47044,
+      "last_seen": 1535047847.759146
+    },
+    {
+      "ip": "172.27.224.251",
+      "roles": [
+        "maestro"
+      ],
+      "identification": null,
+      "hardware_addresses": [
+        "48:5b:39:64:40:79"
+      ],
+      "unit_ids": [],
+      "peers": [
+        "172.27.224.250"
+      ],
+      "function_codes": [
+        6
+      ],
+      "requests": 621,
+      "responses": 0,
+      "exceptions": 0,
+      "max_requests_per_second": 1,
+      "writes": {},
+      "first_seen": 1535046050.34624,
+      "last_seen": 1535047847.240655
+    },
+    {
+      "ip": "172.27.224.70",
+      "roles": [
+        "maestro"
+      ],
+      "identification": null,
+      "hardware_addresses": [
+        "00:0c:29:9d:9e:9e"
+      ],
+      "unit_ids": [],
+      "peers": [
+        "172.27.224.250"
+      ],
+      "function_codes": [
+        3
+      ],
+      "requests": 5751,
+      "responses": 0,
+      "exceptions": 0,
+      "max_requests_per_second": 13,
+      "writes": {},
+      "first_seen": 1535046048.47044,
+      "last_seen": 1535047847.751041
+    }
+  ],
+  "captures": [
+    {
+      "file": "eth2dump-clean-0,5h_1.pcap",
+      "description": "Operación normal",
+      "seconds": 1800,
+      "requests": 6372,
+      "rules": [],
+      "rules_without_policy": [],
+      "first_alert_second": null,
+      "alerts": []
+    },
+    {
+      "file": "eth2dump-mitm-change-5m-0,5h_1.pcap",
+      "description": "Intermediario por suplantación ARP que altera datos, 5 minutos",
+      "seconds": 1799,
+      "requests": 6371,
+      "rules": [
+        "R12"
+      ],
+      "rules_without_policy": [
+        "R12"
+      ],
+      "first_alert_second": 301,
+      "alerts": [
+        {
+          "rule": "R12",
+          "name": "Dirección IP con otra dirección física",
+          "detail": "172.27.224.70 aparece con la dirección física 00:0c:29:e6:14:0d; en la línea base usa 00:0c:29:9d:9e:9e"
+        }
+      ]
+    },
+    {
+      "file": "eth2dump-mitm-change-15m-0,5h_1.pcap",
+      "description": "Intermediario por suplantación ARP que altera datos, 15 minutos",
+      "seconds": 1799,
+      "requests": 6375,
+      "rules": [
+        "R12"
+      ],
+      "rules_without_policy": [
+        "R12"
+      ],
+      "first_alert_second": 301,
+      "alerts": [
+        {
+          "rule": "R12",
+          "name": "Dirección IP con otra dirección física",
+          "detail": "172.27.224.70 aparece con la dirección física 00:0c:29:e6:14:0d; en la línea base usa 00:0c:29:9d:9e:9e"
+        }
+      ]
+    },
+    {
+      "file": "eth2dump-modbusQueryFlooding1m-0,5h_1.pcap",
+      "description": "Inundación de consultas Modbus, 1 minuto",
+      "seconds": 1799,
+      "requests": 4026,
+      "rules": [
+        "R1",
+        "R2",
+        "R3",
+        "R7"
+      ],
+      "rules_without_policy": [],
+      "first_alert_second": 299,
+      "alerts": [
+        {
+          "rule": "R1",
+          "name": "Maestro Modbus no autorizado",
+          "detail": "172.27.224.50 no figura en la lista de maestros autorizados"
+        },
+        {
+          "rule": "R2",
+          "name": "Escritura desde un maestro no autorizado",
+          "detail": "Escritura con código de función 6 desde 172.27.224.50"
+        },
+        {
+          "rule": "R3",
+          "name": "Consigna fuera de los límites de ingeniería",
+          "detail": "Registro 6: valor 0, fuera de 30 a 31"
+        },
+        {
+          "rule": "R7",
+          "name": "Tasa de solicitudes anómala",
+          "detail": "Más de 26 solicitudes por segundo"
+        }
+      ]
+    }
+  ]
+}

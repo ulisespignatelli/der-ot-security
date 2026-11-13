@@ -216,7 +216,7 @@ document.addEventListener("mousemove", e => {
   <div class="grid stages">
     <a class="card stage" href="#arquitectura"><span class="tag">Etapa 2</span><h3>Arquitectura de referencia</h3><p>Zonas, activos y conductos descritos como datos. Un validador marca los flujos que no pasan por un conducto declarado.</p></a>
     <a class="card stage" href="#amenazas"><span class="tag">Etapa 3</span><h3>Modelo de amenazas</h3><p>Amenazas por zona con sus controles y marcos, ponderadas por probabilidad e impacto y asociadas a MITRE ATT&amp;CK for ICS.</p></a>
-    <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. Un sensor pasivo analiza la captura y genera alertas.</p></a>
+    <a class="card stage" href="#laboratorio"><span class="tag">Etapa 4</span><h3>Evaluación en laboratorio</h3><p>Un inversor Modbus emulado recibe ${s.attacks} ataques. El sensor pasivo analiza la captura con una política manual y con una línea base que aprende solo.</p></a>
     <a class="card stage" href="#en-vivo"><span class="tag">Etapa 4</span><h3>Laboratorio en vivo</h3><p>El mismo laboratorio en tiempo real: se lanza cada ataque y la alerta aparece al instante. Requiere el servidor local.</p></a>
     <a class="card stage" href="#expertos"><span class="tag">Etapa 4</span><h3>Consulta a expertos</h3><p>Acuerdo entre expertos medido con el coeficiente W de Kendall y comparado con el modelo.</p></a>
     <a class="card stage" href="#madurez"><span class="tag">Etapa 5</span><h3>Indicadores de madurez</h3><p>Autoevaluación de 18 preguntas para distribuidoras y cooperativas, con puntaje y recomendaciones.</p></a>
@@ -396,17 +396,32 @@ document.addEventListener("mousemove", e => {
   <h2>Evaluación en laboratorio</h2>
   <p class="lead">Una pasarela de protocolos emulada consulta por Modbus/TCP a un inversor emulado. Un switch emulado copia todo el tráfico a un archivo PCAP y el sensor lo analiza sin enviar ningún paquete. Ejecución del ${esc(s.generated.slice(0, 10))}. Para lanzar los ataques y ver las alertas al instante, abrí la pestaña <a href="#en-vivo">En vivo</a>.</p>
   <div class="grid tiles">
-    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados</div></div>
+    <div class="tile"><div class="v">${s.detected} <small>de ${s.attacks}</small></div><div class="k">ataques detectados con la política manual</div></div>
+    <div class="tile"><div class="v">${s.detected_learned} <small>de ${s.attacks}</small></div><div class="k">ataques detectados con la línea base aprendida</div></div>
     <div class="tile"><div class="v">${s.baseline_alerts}</div><div class="k">alertas en operación normal (${s.baseline_requests} solicitudes en ${s.baseline_seconds} s)</div></div>
     <div class="tile"><div class="v">${Object.keys(s.rules).length}</div><div class="k">reglas de detección activas</div></div>
   </div>
   ${missed.length ? `<p class="note">${missed.map(x => `El escenario ${x.id} no se detectó: ${x.description}`).join(" ")} Son los límites del monitoreo pasivo de red y el motivo para sumar otras capas de defensa.</p>` : ""}
   <div class="card"><div class="scroll"><table>
-    <thead><tr><th>Escenario</th><th>Descripción</th><th>Amenaza</th><th>Resultado</th><th>Reglas disparadas</th><th>Estado final del inversor</th><th class="num">Paquetes</th></tr></thead>
-    <tbody>${L.scenarios.map(x => `<tr><td><span class="mono">${x.id}</span><br>${esc(x.name)}</td><td>${esc(x.description)}</td><td class="mono">${x.threat || "—"}</td><td>${pill(OUTCOME_CLASS[x.outcome], x.outcome[0].toUpperCase() + x.outcome.slice(1))}</td><td class="mono">${x.fired_rules.join(", ") || "—"}</td><td>Límite ${x.inverter_state.limite_pct} %, ${x.inverter_state.conectado ? "conectado" : "desconectado"}, ${x.inverter_state.potencia_w} W</td><td class="num">${x.packets}</td></tr>`).join("")}</tbody>
+    <thead><tr><th>Escenario</th><th>Descripción</th><th>Amenaza</th><th>Con política manual</th><th>Con línea base aprendida</th><th>Estado final del inversor</th><th class="num">Paquetes</th></tr></thead>
+    <tbody>${L.scenarios.map(x => `<tr><td><span class="mono">${x.id}</span><br>${esc(x.name)}</td><td>${esc(x.description)}</td><td class="mono">${x.threat || "—"}</td><td>${pill(OUTCOME_CLASS[x.outcome], x.outcome[0].toUpperCase() + x.outcome.slice(1))}<br><span class="mono">${x.fired_rules.join(", ") || "—"}</span></td><td>${pill(OUTCOME_CLASS[x.learned_outcome], x.learned_outcome[0].toUpperCase() + x.learned_outcome.slice(1))}<br><span class="mono">${x.learned_rules.join(", ") || "—"}</span></td><td>Límite ${x.inverter_state.limite_pct} %, ${x.inverter_state.conectado ? "conectado" : "desconectado"}, ${x.inverter_state.potencia_w} W</td><td class="num">${x.packets}</td></tr>`).join("")}</tbody>
   </table></div></div>
+  <p class="lead" style="margin-top:14px">La política manual lista los maestros autorizados y los límites de ingeniería. La línea base aprendida la arma el sensor observando ${s.learned_policy.learned_from.seconds} segundos de operación normal: como en ese período nadie escribe, toda escritura posterior es una novedad. La regla de coherencia física solo existe en la política manual.</p>
+  <div class="card" style="margin-top:14px"><h3>Activos descubiertos por el sensor</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 8px">Inventario armado solo escuchando la captura del escenario S2, sin ninguna configuración.</p>
+    <div class="scroll"><table>
+    <thead><tr><th>Dirección</th><th>Rol</th><th>Identificación</th><th>Funciones Modbus</th><th class="num">Solicitudes enviadas</th><th class="num">Excepciones devueltas</th></tr></thead>
+    <tbody>${s.inventory.map(d => `<tr><td class="mono">${d.ip}</td><td>${d.roles.join(", ")}</td><td>${esc(d.identification || "—")}</td><td class="mono">${d.function_codes.join(", ")}</td><td class="num">${d.requests}</td><td class="num">${d.exceptions}</td></tr>`).join("")}</tbody>
+    </table></div></div>
+  ${DATA.third_party ? (tp => `<div class="card" style="margin-top:14px"><h3>Validación con capturas de terceros</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 8px;max-width:86ch">El mismo sensor, sobre capturas públicas de un banco de pruebas con equipos reales: ${esc(tp.dataset)}. La línea base se aprendió de la captura de operación normal y se aplicó a las demás. En las capturas de ataque, el ataque empieza cerca del segundo 300.</p>
+    <div class="scroll"><table>
+    <thead><tr><th>Captura</th><th>Contenido</th><th class="num">Solicitudes</th><th>Resultado</th><th>Reglas</th><th class="num">Primera alerta</th></tr></thead>
+    <tbody>${tp.captures.map(c => `<tr><td class="mono">${esc(c.file)}</td><td>${esc(c.description)}</td><td class="num">${c.requests}</td><td>${c.rules.length ? pill("good", "Detectado") : pill("good", "Sin alertas")}</td><td class="mono">${c.rules.join(", ") || "—"}</td><td class="num">${c.first_alert_second == null ? "—" : "segundo " + c.first_alert_second}</td></tr>`).join("")}</tbody>
+    </table></div>
+    <p style="color:var(--muted);font-size:13px;margin:10px 0 0;max-width:86ch">R12 detecta la presencia del intermediario porque la dirección IP de un equipo aparece con otra dirección física; no detecta qué valores fueron alterados. Fuente: ${esc(tp.citation)}.</p></div>`)(DATA.third_party) : ""}
   <div class="grid two" style="margin-top:14px">
-    <div class="card"><h3>Alertas generadas</h3><div class="scroll"><table>
+    <div class="card"><h3>Alertas generadas con la política manual</h3><div class="scroll"><table>
       <thead><tr><th>Escenario</th><th>Regla</th><th>Origen</th><th>Detalle</th></tr></thead>
       <tbody>${L.scenarios.flatMap(x => x.alerts.map(a => `<tr><td class="mono">${x.id}</td><td><span class="mono">${a.rule}</span> ${esc(a.name)}</td><td class="mono">${a.source}</td><td>${esc(a.detail)}</td></tr>`)).join("")}</tbody>
     </table></div></div>

@@ -1,0 +1,31 @@
+{
+  "comment": "Línea base aprendida por el sensor. Revisarla antes de usarla: acepta como normal todo lo observado.",
+  "modbus_port": 502,
+  "authorized_masters": [
+    "10.10.15.30"
+  ],
+  "slaves": {
+    "10.10.40.21": {
+      "function_codes": [
+        3
+      ],
+      "write_ranges": {}
+    }
+  },
+  "hardware_addresses": {
+    "10.10.15.30": [
+      "02:00:0a:0a:0f:1e"
+    ],
+    "10.10.40.21": [
+      "02:00:0a:0a:28:15"
+    ]
+  },
+  "max_requests_per_second": 40,
+  "max_illegal_address_errors": 3,
+  "learned_from": {
+    "capture": "S0.pcap",
+    "seconds": 20.0,
+    "requests": 398,
+    "peak_requests_per_second": 20
+  }
+}

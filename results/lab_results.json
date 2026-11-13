@@ -1,12 +1,13 @@
 {
   "summary": {
-    "generated": "2026-11-13T01:48:06+00:00",
+    "generated": "2026-11-13T02:35:59+00:00",
     "attacks": 8,
     "detected": 6,
     "baseline_packets": 796,
     "baseline_requests": 398,
     "baseline_seconds": 20.0,
     "baseline_alerts": 0,
+    "detected_learned": 6,
     "rules": {
       "R1": {
         "name": "Maestro Modbus no autorizado",
@@ -47,6 +48,26 @@
         "name": "Telemetría físicamente incoherente",
         "technique": "T0856",
         "severity": "alta"
+      },
+      "R9": {
+        "name": "Código de función ausente en la línea base",
+        "technique": "T0855",
+        "severity": "media"
+      },
+      "R10": {
+        "name": "Escritura a un registro sin antecedentes",
+        "technique": "T0836",
+        "severity": "alta"
+      },
+      "R11": {
+        "name": "Esclavo ausente en la línea base",
+        "technique": "T0846",
+        "severity": "media"
+      },
+      "R12": {
+        "name": "Dirección IP con otra dirección física",
+        "technique": "T0830",
+        "severity": "alta"
       }
     },
     "policy": {
@@ -82,7 +103,117 @@
         "tolerance": 0.05,
         "consecutive_readings": 2
       }
-    }
+    },
+    "learned_policy": {
+      "comment": "Línea base aprendida por el sensor. Revisarla antes de usarla: acepta como normal todo lo observado.",
+      "modbus_port": 502,
+      "authorized_masters": [
+        "10.10.15.30"
+      ],
+      "slaves": {
+        "10.10.40.21": {
+          "function_codes": [
+            3
+          ],
+          "write_ranges": {}
+        }
+      },
+      "hardware_addresses": {
+        "10.10.15.30": [
+          "02:00:0a:0a:0f:1e"
+        ],
+        "10.10.40.21": [
+          "02:00:0a:0a:28:15"
+        ]
+      },
+      "max_requests_per_second": 40,
+      "max_illegal_address_errors": 3,
+      "learned_from": {
+        "capture": "S0.pcap",
+        "seconds": 20.0,
+        "requests": 398,
+        "peak_requests_per_second": 20
+      }
+    },
+    "inventory": [
+      {
+        "ip": "10.10.15.30",
+        "roles": [
+          "maestro"
+        ],
+        "identification": null,
+        "hardware_addresses": [
+          "02:00:0a:0a:0f:1e"
+        ],
+        "unit_ids": [],
+        "peers": [
+          "10.10.40.21"
+        ],
+        "function_codes": [
+          3
+        ],
+        "requests": 20,
+        "responses": 0,
+        "exceptions": 0,
+        "max_requests_per_second": 20,
+        "writes": {},
+        "first_seen": 1794537348.914293,
+        "last_seen": 1794537349.824126
+      },
+      {
+        "ip": "10.10.40.21",
+        "roles": [
+          "esclavo"
+        ],
+        "identification": "Inversor emulado",
+        "hardware_addresses": [
+          "02:00:0a:0a:28:15"
+        ],
+        "unit_ids": [
+          1
+        ],
+        "peers": [
+          "10.10.15.30",
+          "10.10.40.99"
+        ],
+        "function_codes": [
+          3,
+          43
+        ],
+        "requests": 0,
+        "responses": 27,
+        "exceptions": 4,
+        "max_requests_per_second": 0,
+        "writes": {},
+        "first_seen": 1794537348.914293,
+        "last_seen": 1794537349.824229
+      },
+      {
+        "ip": "10.10.40.99",
+        "roles": [
+          "maestro"
+        ],
+        "identification": null,
+        "hardware_addresses": [
+          "02:00:0a:0a:28:63"
+        ],
+        "unit_ids": [],
+        "peers": [
+          "10.10.40.21"
+        ],
+        "function_codes": [
+          3,
+          43
+        ],
+        "requests": 7,
+        "responses": 0,
+        "exceptions": 0,
+        "max_requests_per_second": 7,
+        "writes": {},
+        "first_seen": 1794537349.415066,
+        "last_seen": 1794537349.415883
+      }
+    ]
   },
   "scenarios": [
     {
@@ -106,7 +237,9 @@
         "potencia_w": 4000
       },
       "alerts": [],
-      "pcap": "results/pcap/S0.pcap"
+      "pcap": "results/pcap/S0.pcap",
+      "learned_rules": [],
+      "learned_outcome": "sin alertas"
     },
     {
       "id": "S1",
@@ -140,7 +273,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794534475.371,
+          "time": 1794537348.354,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -149,12 +282,19 @@
           "name": "Escritura desde un maestro no autorizado",
           "technique": "T0855",
           "severity": "alta",
-          "time": 1794534475.371,
+          "time": 1794537348.354,
           "source": "10.10.40.99",
           "detail": "Escritura con código de función 6 desde 10.10.40.99"
         }
       ],
-      "pcap": "results/pcap/S1.pcap"
+      "pcap": "results/pcap/S1.pcap",
+      "learned_rules": [
+        "R1",
+        "R2",
+        "R9",
+        "R10"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S2",
@@ -191,7 +331,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794534476.43,
+          "time": 1794537349.415,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -200,7 +340,7 @@
           "name": "Solicitud de identificación o diagnóstico",
           "technique": "T0888",
           "severity": "media",
-          "time": 1794534476.43,
+          "time": 1794537349.415,
           "source": "10.10.40.99",
           "detail": "Código de función 43, ausente en la operación normal"
         },
@@ -209,12 +349,19 @@
           "name": "Barrido de registros",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794534476.432,
+          "time": 1794537349.416,
           "source": "10.10.40.99",
           "detail": "3 lecturas a direcciones inexistentes"
         }
       ],
-      "pcap": "results/pcap/S2.pcap"
+      "pcap": "results/pcap/S2.pcap",
+      "learned_rules": [
+        "R1",
+        "R5",
+        "R6",
+        "R9"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S3",
@@ -246,12 +393,17 @@
           "name": "Consigna fuera de los límites de ingeniería",
           "technique": "T0836",
           "severity": "alta",
-          "time": 1794534477.492,
+          "time": 1794537350.478,
           "source": "10.10.15.30",
           "detail": "Límite de potencia (%): valor 5, fuera de 20 a 100"
         }
       ],
-      "pcap": "results/pcap/S3.pcap"
+      "pcap": "results/pcap/S3.pcap",
+      "learned_rules": [
+        "R9",
+        "R10"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S4",
@@ -285,7 +437,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794534478.553,
+          "time": 1794537351.539,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -294,12 +446,17 @@
           "name": "Tasa de solicitudes anómala",
           "technique": "T0814",
           "severity": "alta",
-          "time": 1794534478.558,
+          "time": 1794537351.543,
           "source": "10.10.40.99",
           "detail": "Más de 50 solicitudes por segundo"
         }
       ],
-      "pcap": "results/pcap/S4.pcap"
+      "pcap": "results/pcap/S4.pcap",
+      "learned_rules": [
+        "R1",
+        "R7"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S5",
@@ -334,7 +491,7 @@
           "name": "Maestro Modbus no autorizado",
           "technique": "T0846",
           "severity": "media",
-          "time": 1794534479.718,
+          "time": 1794537352.704,
           "source": "10.10.40.99",
           "detail": "10.10.40.99 no figura en la lista de maestros autorizados"
         },
@@ -343,7 +500,7 @@
           "name": "Escritura desde un maestro no autorizado",
           "technique": "T0855",
           "severity": "alta",
-          "time": 1794534479.718,
+          "time": 1794537352.704,
           "source": "10.10.40.99",
           "detail": "Escritura con código de función 6 desde 10.10.40.99"
         },
@@ -352,12 +509,19 @@
           "name": "Orden de desconexión del inversor",
           "technique": "T0816",
           "severity": "alta",
-          "time": 1794534479.718,
+          "time": 1794537352.704,
           "source": "10.10.40.99",
           "detail": "Escritura que desconecta el inversor de la red"
         }
       ],
-      "pcap": "results/pcap/S5.pcap"
+      "pcap": "results/pcap/S5.pcap",
+      "learned_rules": [
+        "R1",
+        "R2",
+        "R9",
+        "R10"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S6",
@@ -380,7 +544,12 @@
         "potencia_w": 2400
       },
       "alerts": [],
-      "pcap": "results/pcap/S6.pcap"
+      "pcap": "results/pcap/S6.pcap",
+      "learned_rules": [
+        "R9",
+        "R10"
+      ],
+      "learned_outcome": "detectado"
     },
     {
       "id": "S7",
@@ -412,12 +581,14 @@
           "name": "Telemetría físicamente incoherente",
           "technique": "T0856",
           "severity": "alta",
-          "time": 1794534481.941,
+          "time": 1794537354.932,
           "source": "10.10.40.21",
           "detail": "Reporta 6500 W, por encima del máximo posible de 5250 W con límite 100 %"
         }
       ],
-      "pcap": "results/pcap/S7.pcap"
+      "pcap": "results/pcap/S7.pcap",
+      "learned_rules": [],
+      "learned_outcome": "no detectado"
     },
     {
       "id": "S8",
@@ -440,7 +611,9 @@
         "potencia_w": 4000
       },
       "alerts": [],
-      "pcap": "results/pcap/S8.pcap"
+      "pcap": "results/pcap/S8.pcap",
+      "learned_rules": [],
+      "learned_outcome": "no detectado"
     }
   ]
 }

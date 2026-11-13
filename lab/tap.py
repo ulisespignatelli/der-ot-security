@@ -22,7 +22,7 @@ class PcapWriter:
         tcp = struct.pack(">HHIIBBHHH", src_port, dst_port, seq & 0xFFFFFFFF, 0, 5 << 4, 0x18, 65535, 0, 0)
         ip = struct.pack(">BBHHHBBH4s4s", 0x45, 0, 40 + len(payload), 0, 0, 64, 6, 0,
                          socket.inet_aton(src_ip), socket.inet_aton(dst_ip))
-        frame = b"\x02\x00\x00\x00\x00\x02" + b"\x02\x00\x00\x00\x00\x01" + b"\x08\x00" + ip + tcp + payload
+        frame = b"\x02\x00" + socket.inet_aton(dst_ip) + b"\x02\x00" + socket.inet_aton(src_ip) + b"\x08\x00" + ip + tcp + payload
         now = time.time()
         with self.lock:
             self.fh.write(struct.pack("<IIII", int(now), int(now % 1 * 1e6), len(frame), len(frame)) + frame)

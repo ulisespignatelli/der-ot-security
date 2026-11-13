@@ -1,31 +1,17 @@
-"""Utilidades mínimas de Modbus/TCP, sin dependencias externas."""
+"""Cliente y utilidades de Modbus/TCP para los equipos emulados del laboratorio.
+
+La decodificación es la del sensor; lo que se agrega acá es la parte que
+transmite, que el sensor no tiene.
+"""
 import socket
 import struct
 
-READ_HOLDING, WRITE_SINGLE, WRITE_MULTIPLE, DEVICE_ID = 3, 6, 16, 43
-WRITE_CODES = {5, 6, 15, 16}
+from sensor.modbus import (DEVICE_ID, READ_HOLDING, WRITE_CODES, WRITE_MULTIPLE,  # noqa: F401
+                           WRITE_SINGLE, parse_adu, split_adus)
 
 
 def build_adu(tid, unit, pdu):
     return struct.pack(">HHHB", tid, 0, len(pdu) + 1, unit) + pdu
-
-
-def split_adus(buffer):
-    """Separa los ADU completos de un buffer. Devuelve (lista, resto)."""
-    adus = []
-    while len(buffer) >= 8:
-        length = struct.unpack(">H", buffer[4:6])[0]
-        total = 6 + length
-        if length < 2 or len(buffer) < total:
-            break
-        adus.append(buffer[:total])
-        buffer = buffer[total:]
-    return adus, buffer
-
-
-def parse_adu(adu):
-    tid, _, _, unit = struct.unpack(">HHHB", adu[:7])
-    return {"tid": tid, "unit": unit, "fc": adu[7], "data": adu[8:]}
 
 
 def recv_adu(sock):

@@ -12,6 +12,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sensor import baseline
+
 from . import detector, modbus
 from .inverter_sim import Inverter
 from .tap import Tap
@@ -200,17 +202,27 @@ def main(baseline_seconds=20.0, save=True):
             print(f"{sc['id']}  {outcome:14} reglas={','.join(fired) or '-':12} paquetes={packets:5}  {sc['name']}")
     finally:
         lab.stop()
+    # Segunda evaluación: el sensor aprende la línea base de la operación normal (S0), sin política manual.
+    learned = baseline.learn(RESULTS / "pcap" / "S0.pcap")
+    for r in out:
+        fired = sorted({a["rule"] for a in detector.analyse(ROOT / r["pcap"], learned)["alerts"]}, key=lambda x: int(x[1:]))
+        r["learned_rules"] = fired
+        r["learned_outcome"] = ("detectado" if fired else "no detectado") if r["threat"] else ("sin alertas" if not fired else "falso positivo")
+    inventory = detector.analyse(RESULTS / "pcap" / "S2.pcap")["inventory"]
     attacks = [r for r in out if r["threat"]]
     base = out[0]
     summary = {"generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                "attacks": len(attacks), "detected": sum(r["outcome"] == "detectado" for r in attacks),
                "baseline_packets": base["packets"], "baseline_requests": base["requests"],
                "baseline_seconds": baseline_seconds, "baseline_alerts": len(base["alerts"]),
-               "rules": detector.RULES, "policy": policy}
+               "detected_learned": sum(r["learned_outcome"] == "detectado" for r in attacks),
+               "rules": detector.RULES, "policy": policy, "learned_policy": learned, "inventory": inventory}
     if save:
+        (RESULTS / "learned_policy.json").write_text(json.dumps(learned, indent=2, ensure_ascii=False), encoding="utf-8")
         (RESULTS / "lab_results.json").write_text(
             json.dumps({"summary": summary, "scenarios": out}, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"\nDetectados {summary['detected']} de {summary['attacks']} ataques. "
+    print(f"\nCon línea base aprendida: {summary['detected_learned']} de {summary['attacks']} ataques detectados.")
+    print(f"Detectados {summary['detected']} de {summary['attacks']} ataques. "
           f"Alertas en operación normal: {summary['baseline_alerts']} en {summary['baseline_requests']} solicitudes.")
     return out
 
